@@ -1,6 +1,6 @@
 """Authenticated collection and history; user identity comes from the token."""
-from datetime import datetime, timedelta, timezone
-from typing import Annotated
+from datetime import date as Date, datetime, timedelta, timezone
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
@@ -61,3 +61,32 @@ def analytics(user: User, store: Store, days: Days = 7, id_parte: Part = None) -
     start, end = window(days)
     return {"from": start, "to": end, "days": days,
             "items": store.analytics(user.id_usuario, start, end, days, id_parte)}
+
+
+@router.get("/measurements/latest")
+def latest(user: User, store: Store, date: Date | None = None) -> dict:
+    """Latest reading per region on a UTC date; defaults to the latest recorded day."""
+    return store.latest(user.id_usuario, date)
+
+
+@router.get('/measurements/movement')
+def movement(user: User, store: Store, start_date: Date, end_date: Date,
+             id_parte: Part = None) -> dict:
+    """Counts of sensor samples marked as moving, grouped by UTC hour or day."""
+    if end_date < start_date:
+        raise HTTPException(status_code=422, detail='End date must be on or after start date')
+    if end_date > datetime.now(timezone.utc).date():
+        raise HTTPException(status_code=422, detail='Dates cannot be in the future')
+    if (end_date - start_date).days >= 3650:
+        raise HTTPException(status_code=422, detail='Select at most 3650 days')
+    return store.movement(user.id_usuario, start_date, end_date, id_parte)
+
+
+@router.get('/measurements/statistics')
+def statistics(user: User, store: Store, start_date: Date, end_date: Date,
+               metric: Literal['temperatura', 'caudal'] = 'temperatura') -> dict:
+    if end_date < start_date or end_date > datetime.now(timezone.utc).date():
+        raise HTTPException(status_code=422, detail='Select an ordered date range without future dates')
+    if (end_date - start_date).days >= 3650:
+        raise HTTPException(status_code=422, detail='Select at most 3650 days')
+    return store.statistics(user.id_usuario, start_date, end_date, metric)

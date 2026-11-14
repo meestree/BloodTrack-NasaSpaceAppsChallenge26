@@ -1,0 +1,227 @@
+/* Local classes style the design; Streamlit selectors only style the app shell. */
+:root {
+    color-scheme: dark;
+    --page-background: #000;
+    --page-text: #fff;
+    --menu-color: #b6220d;
+    --normal-color: #00ed10;
+    --caution-color: #fff100;
+    --danger-color: #b6220d;
+}
+
+[data-testid="stAppViewContainer"],
+[data-testid="stApp"] {
+    background: var(--page-background);
+    color: var(--page-text);
+}
+
+[data-testid="stHeader"] {
+    background: transparent;
+}
+
+[data-testid="stToolbar"] {
+    display: none;
+}
+
+[data-testid="stMainBlockContainer"] {
+    max-width: 1600px;
+    padding: 20px clamp(24px, 10.7vw, 145px) 56px;
+}
+
+.temperature-title {
+    margin: 0 0 88px clamp(0px, 7.1vw, 96px);
+    padding: 0;
+    color: var(--page-text);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: clamp(56px, 8.3vw, 112px);
+    font-weight: 400;
+    letter-spacing: -0.035em;
+    line-height: 1.3;
+}
+
+.st-key-temperature-content [data-testid="stVerticalBlock"] {
+    gap: 0;
+}
+
+.temperature-copy,
+.temperature-legend {
+    color: var(--page-text);
+    font-size: clamp(19px, 1.92vw, 26px);
+    font-weight: 400;
+    line-height: 1.22;
+}
+
+.temperature-copy p {
+    margin: 0 0 32px;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+.temperature-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    margin: 0 0 32px;
+    padding: 0 0 0 11px;
+    list-style: none;
+}
+
+.temperature-legend li {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+}
+
+.legend-dot {
+    display: inline-block;
+    flex: 0 0 15px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+}
+
+.legend-dot--normal { background: var(--normal-color); }
+.legend-dot--caution { background: var(--caution-color); }
+.legend-dot--danger { background: var(--danger-color); }
+
+.body-map-slot {
+    width: 100%;
+    min-height: 490px;
+}
+
+/* Retain Streamlit's keyboard-accessible sidebar control, styled as the menu. */
+[data-testid="stSidebarCollapsedControl"] {
+    top: 45px;
+    left: 12px;
+}
+
+[data-testid="stSidebarCollapsedControl"] button {
+    width: 48px;
+    height: 48px;
+    border: 0;
+    border-radius: 0;
+    color: var(--menu-color);
+    background: transparent;
+}
+
+[data-testid="stSidebarCollapsedControl"] button::before {
+    content: "";
+    display: block;
+    width: 37px;
+    height: 33px;
+    background: linear-gradient(
+        to bottom,
+        var(--menu-color) 0 5px, transparent 5px 14px,
+        var(--menu-color) 14px 19px, transparent 19px 28px,
+        var(--menu-color) 28px 33px
+    );
+}
+
+[data-testid="stSidebarCollapsedControl"] button svg,
+[data-testid="stSidebarCollapsedControl"] button [data-testid="stIconMaterial"] {
+    display: none;
+}
+
+[data-testid="stSidebarCollapsedControl"] button:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 3px;
+}
+
+@media (max-width: 850px) {
+    [data-testid="stMainBlockContainer"] {
+        padding: 90px 28px 36px;
+    }
+
+    .temperature-title {
+        margin: 0 0 44px;
+        font-size: clamp(44px, 10vw, 80px);
+    }
+
+    .st-key-temperature-content [data-testid="stHorizontalBlock"] {
+        flex-direction: column;
+    }
+
+    .st-key-temperature-content [data-testid="stColumn"] {
+        width: 100%;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .temperature-copy,
+    .temperature-legend {
+        font-size: 20px;
+        line-height: 1.45;
+    }
+
+    .temperature-legend { padding-left: 0; gap: 22px; }
+    .body-map-slot { min-height: 300px; }
+}
+
+.body-map-frame {
+    height: 510px;
+    overflow: hidden;
+}
+.body-map-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform: scale(1.65);
+    transform-origin: 50% 40%;
+}
+
+.reliability-title {
+    font-size: clamp(38px, 6vw, 82px);
+    overflow-wrap: anywhere;
+}
+
+.statistical-title {
+    margin-left: 0;
+    margin-bottom: 172px;
+    font-size: clamp(44px, 7.4vw, 104px);
+    overflow-wrap: break-word;
+}
+
+.st-key-analysis-actions {
+    max-width: 262px;
+    margin-left: auto;
+    padding-top: 40px;
+}
+
+.st-key-analysis-actions,
+.st-key-analysis-actions [data-testid="stVerticalBlock"] {
+    gap: 94px !important;
+}
+
+.st-key-analysis-actions button {
+    min-height: 82px;
+    border: 0;
+    border-radius: 11px;
+    background: var(--menu-color);
+    color: var(--page-text);
+    opacity: 1;
+}
+
+.st-key-analysis-actions button p {
+    font-size: 26px;
+    font-weight: 400;
+}
+
+@media (max-width: 850px) {
+    .statistical-title { margin-bottom: 48px; }
+    .st-key-analysis-actions {
+        max-width: 100%;
+        margin-left: 0;
+        padding-top: 12px;
+    }
+    .st-key-analysis-actions,
+    .st-key-analysis-actions [data-testid="stVerticalBlock"] {
+        gap: 24px !important;
+    }
+}
+
+.st-key-analysis-actions button:hover {
+    background: #d32b13;
+    color: white;
+}
