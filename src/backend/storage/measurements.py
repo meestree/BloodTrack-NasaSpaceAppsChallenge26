@@ -1,5 +1,5 @@
 """User-scoped collection, UTC history, and persisted daily aggregates."""
-from datetime import datetime
+from datetime import date, datetime
 
 from backend.measurements.schemas import MeasurementBatch
 from backend.storage.auth import AuthStore
@@ -100,3 +100,72 @@ class MeasurementStore:
                 item["cobertura_dias_fraccion"] = item["dias_con_datos"] / days
                 items.append(item)
             return items
+
+    def latest(self, user_id: int, selected: date | None) -> dict:
+        with self.database.connection() as connection:
+            if selected is None:
+                row = connection.execute("""SELECT date(timestamp) FROM registros
+                    WHERE id_usuario = ? ORDER BY julianday(timestamp) DESC, id_registro DESC LIMIT 1""",
+                    (user_id,)).fetchone()
+                if row is None:
+                    return {"date": None, "items": []}
+                selected = date.fromisoformat(row[0])
+            rows = connection.execute("""WITH ranked AS (
+                SELECT r.*, p.nombre,
+                    ROW_NUMBER() OVER (PARTITION BY r.id_parte
+                        ORDER BY julianday(r.timestamp) DESC, r.id_registro DESC) AS rank
+                FROM registros r JOIN partes_corporales p ON p.id_parte = r.id_parte
+                WHERE r.id_usuario = ? AND date(r.timestamp) = ?)
+                SELECT id_registro, id_usuario, id_parte, nombre, timestamp,
+                       temperatura, caudal, movimiento
+                FROM ranked WHERE rank = 1 ORDER BY id_parte""", (user_id, selected.isoformat()))
+            return {"date": selected.isoformat(), "items": [dict(row) for row in rows]}
+
+    def movement(self, user_id: int, start: date, end: date, part: int | None) -> dict:
+        hourly = start == end
+        pattern = '%Y-%m-%dT%H:00:00Z' if hourly else '%Y-%m-%d'
+        with self.database.connection() as connection:
+            rows = connection.execute('''SELECT strftime(?, timestamp) AS periodo,
+                COUNT(*) AS muestras, SUM(movimiento) AS movimiento_unos
+                FROM registros WHERE id_usuario = ? AND date(timestamp) BETWEEN ? AND ?
+                AND (? IS NULL OR id_parte = ?)
+                GROUP BY periodo ORDER BY periodo''',
+                (pattern, user_id, start.isoformat(), end.isoformat(), part, part))
+            return {'from': start.isoformat(), 'to': end.isoformat(),
+                    'granularity': 'hour' if hourly else 'day',
+                    'items': [dict(row) for row in rows]}
+
+    def statistics(self, user_id: int, start: date, end: date, metric: str) -> dict:
+        """Welford sample statistics avoid cancellation in variance calculations."""
+        from math import sqrt
+        assert metric in ('temperatura', 'caudal')
+        pattern = '%Y-%m-%dT%H:00:00Z' if start == end else '%Y-%m-%d'
+        groups = {}
+        with self.database.connection() as connection:
+            rows = connection.execute(f'''SELECT r.id_parte, p.nombre,
+                strftime(?, r.timestamp) AS periodo, r.{metric} AS valor
+                FROM registros r JOIN partes_corporales p ON p.id_parte = r.id_parte
+                WHERE r.id_usuario = ? AND date(r.timestamp) BETWEEN ? AND ?
+                ORDER BY julianday(r.timestamp), r.id_registro''',
+                (pattern, user_id, start.isoformat(), end.isoformat()))
+            for row in rows:
+                key = (row['id_parte'], row['periodo'])
+                if key not in groups:
+                    groups[key] = {'id_parte': row['id_parte'], 'nombre': row['nombre'],
+                        'periodo': row['periodo'], 'muestras': 0, 'media': 0.,
+                        'm2': 0., 'minimo': row['valor'], 'maximo': row['valor']}
+                group = groups[key]
+                group['muestras'] += 1
+                delta = row['valor'] - group['media']
+                group['media'] += delta / group['muestras']
+                group['m2'] += delta * (row['valor'] - group['media'])
+                group['minimo'] = min(group['minimo'], row['valor'])
+                group['maximo'] = max(group['maximo'], row['valor'])
+        items = []
+        for key in sorted(groups):
+            group = groups[key]
+            m2 = group.pop('m2')
+            group['desviacion_estandar'] = sqrt(max(0., m2) / (group['muestras'] - 1)) if group['muestras'] > 1 else None
+            items.append(group)
+        return {'from': start.isoformat(), 'to': end.isoformat(), 'metric': metric,
+                'granularity': 'hour' if start == end else 'day', 'items': items}

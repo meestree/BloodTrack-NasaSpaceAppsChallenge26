@@ -16,6 +16,10 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "httpx>=0.28,<1"]
+frontend = ["streamlit>=1.45,<2", "requests>=2.32,<3", "pandas>=2,<4", "altair>=6,<7"]
+
+[tool.setuptools.package-data]
+frontend = ["assets/*.css"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
