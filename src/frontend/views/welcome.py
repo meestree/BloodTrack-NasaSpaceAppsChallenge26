@@ -19,11 +19,7 @@ SECTIONS = {
     "microcirculation": "Microcirculation",
     "reliability": "Measurement Reliability",
     "analysis": "Statistical Analysis",
-    "profile": "My Profile",
-    "collect": "Record a Measurement",
-    "history": "Measurement History",
     "daily": "Daily Summaries",
-    "analytics": "Period Analytics",
 }
 
 
@@ -96,11 +92,7 @@ def render() -> None:
                         'microcirculation': render_microcirculation,
                         'reliability': render_reliability,
                         'analysis': render_statistical_analysis,
-                        'profile': lambda: measurements.render_profile(user),
-                        'collect': lambda: measurements.render_collection(token),
-                        'history': lambda: measurements.render_history(token),
                         'daily': lambda: measurements.render_daily(token),
-                        'analytics': lambda: measurements.render_analytics(token),
                     }
                     renderers[section]()
                 except api.ApiError as error:
