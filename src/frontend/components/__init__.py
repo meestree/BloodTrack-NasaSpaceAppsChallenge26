@@ -1,1 +1,1 @@
-"""Shared interface components for the login pages."""
+"""Reusable presentation components; no database access."""

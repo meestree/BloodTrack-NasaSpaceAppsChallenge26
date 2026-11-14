@@ -1,310 +1,227 @@
-/* Colors, proportions, and spacing follow the supplied Figma screenshots. */
-:root { color-scheme: dark; }
-.stApp { background: #000; color: #fff; font-family: "Century Gothic", "Avenir Next", sans-serif; }
-[data-testid="stHeader"] { background: transparent; }
-#MainMenu { display: none; }
-[data-testid="stAppDeployButton"] { display: none; }
-[data-testid="stMain"] { min-height: 100dvh; }
-[data-testid="stMainBlockContainer"] {
-    max-width: 432px;
-    padding: max(28px, calc((100dvh - 530px) / 2)) 22px 28px;
-}
-[data-testid="stVerticalBlock"] { gap: 0; }
-[data-testid="stVerticalBlockBorderWrapper"] { border: 0; }
-[data-testid="stForm"] {
-    background: #b3220d;
-    border: none;
-    border-radius: 7px;
-    padding: 34px 48px 25px;
-}
-[data-testid="stForm"] h1 {
-    color: white;
-    text-align: center;
-    font-size: 28px;
-    font-weight: 400;
-    line-height: 1.3;
-    padding: 0 0 36px;
-    letter-spacing: -.3px;
-}
-[data-testid="stTextInput"], [data-testid="stCheckbox"] { margin: 0; }
-[data-testid="stTextInput"] { margin-bottom: 26px; }
-[data-testid="stTextInput"] label {
-    justify-content: center;
-    width: 100%;
-    color: white;
-    padding: 0 0 22px;
-    min-height: 0;
-}
-[data-testid="stTextInput"] label p { font-size: 16px; font-weight: 400; }
-[data-testid="stTextInput"] [data-baseweb="input"] {
-    background: #fff;
-    border: 0;
-    border-radius: 7px;
-    min-height: 44px;
-}
-[data-testid="stTextInput"] input { background: #fff; color: #111; caret-color: #111; padding: 10px 12px; }
-[data-testid="stTextInput"] button { background: #fff; color: #333; }
-[data-testid="stCheckbox"] label { color: #fff; min-height: 32px; }
-[data-testid="stCheckbox"] label p { font-size: 11px; font-weight: 400; }
-[data-testid="stCheckbox"] [data-baseweb="checkbox"] > div:first-child { background: #fff; border-color: #fff; border-radius: 3px; }
-[data-testid="stHorizontalBlock"] { gap: 8px; align-items: center; }
-[data-testid="stButton"] button, [data-testid="stFormSubmitButton"] button {
-    background: #000;
-    border: 1px solid #000;
-    border-radius: 7px;
-    min-height: 32px;
-    color: #fff;
-    font-weight: 400;
-    padding: 4px 16px;
-}
-[data-testid="stButton"] button p, [data-testid="stFormSubmitButton"] button p { font-size: 14px; }
-[data-testid="stButton"] button:hover, [data-testid="stFormSubmitButton"] button:hover { background: #202020; color: #fff; border-color: #fff; }
-[data-testid="stButton"] button:focus-visible, [data-testid="stFormSubmitButton"] button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
-[data-testid="stFormSubmitButton"] { margin-top: 22px; text-align: center; }
-[data-testid="stFormSubmitButton"] button { margin-inline: auto; }
-[data-testid="stHorizontalBlock"] [data-testid="stFormSubmitButton"] { margin-top: 0; }
-[data-testid="stForm"] a { color: #fff; font-size: 11px; text-decoration: none; }
-[data-testid="stForm"] a:hover { text-decoration: underline; }
-.forgot-link { text-align: right; padding-top: 5px; }
-[data-testid="stCaptionContainer"] { text-align: center; margin-top: 15px; }
-[data-testid="stCaptionContainer"] a { color: #ddd; }
-[data-testid="stAlert"] { margin-top: 12px; }
-[data-testid="stButton"] button[kind="tertiary"] { background: transparent; color: #ddd; border: 0; margin-top: 12px; padding-left: 0; }
-@media (max-width: 480px) {
-    [data-testid="stMainBlockContainer"] { padding: 32px 18px; }
-    [data-testid="stForm"] { padding: 30px 28px 24px; }
-    [data-testid="stHorizontalBlock"] { flex-wrap: nowrap; }
-    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] { width: auto !important; min-width: 0; flex: 1 1 0; }
+/* Local classes style the design; Streamlit selectors only style the app shell. */
+:root {
+    color-scheme: dark;
+    --page-background: #000;
+    --page-text: #fff;
+    --menu-color: #b6220d;
+    --normal-color: #00ed10;
+    --caution-color: #fff100;
+    --danger-color: #b6220d;
 }
 
-/* Welcome artboard: a gray navigation drawer beside a black reading area. */
-.stApp:has(.st-key-workspace) [data-testid="stHeader"] { display: none; }
-[data-testid="stMainBlockContainer"]:has(.st-key-workspace) { max-width: none; width: 100%; padding: 0; }
-.st-key-workspace { --drawer-width: clamp(280px, 34.7vw, 380px); min-height: 100svh; }
-.st-key-app_navigation {
-    position: fixed;
-    z-index: 100;
-    inset: 0 auto 0 0;
-    width: var(--drawer-width);
-    height: 100svh;
-    overflow-y: auto;
-    background: #191919;
+[data-testid="stAppViewContainer"],
+[data-testid="stApp"] {
+    background: var(--page-background);
+    color: var(--page-text);
 }
-.st-key-navigation_close { margin: 38px 0 7px 30px; }
-.st-key-navigation_open { position: fixed; z-index: 101; top: 32px; left: 30px; }
-.st-key-navigation_close button, .st-key-navigation_open button {
-    width: 44px;
-    height: 44px;
-    min-height: 44px;
-    padding: 10px;
-    background: transparent !important;
-    border: 0 !important;
+
+[data-testid="stHeader"] {
+    background: transparent;
+}
+
+[data-testid="stToolbar"] {
+    display: none;
+}
+
+[data-testid="stMainBlockContainer"] {
+    max-width: 1600px;
+    padding: 20px clamp(24px, 10.7vw, 145px) 56px;
+}
+
+.temperature-title {
+    margin: 0 0 88px clamp(0px, 7.1vw, 96px);
+    padding: 0;
+    color: var(--page-text);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: clamp(56px, 8.3vw, 112px);
+    font-weight: 400;
+    letter-spacing: -0.035em;
+    line-height: 1.3;
+}
+
+.st-key-temperature-content [data-testid="stVerticalBlock"] {
+    gap: 0;
+}
+
+.temperature-copy,
+.temperature-legend {
+    color: var(--page-text);
+    font-size: clamp(19px, 1.92vw, 26px);
+    font-weight: 400;
+    line-height: 1.22;
+}
+
+.temperature-copy p {
+    margin: 0 0 32px;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+.temperature-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    margin: 0 0 32px;
+    padding: 0 0 0 11px;
+    list-style: none;
+}
+
+.temperature-legend li {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+}
+
+.legend-dot {
+    display: inline-block;
+    flex: 0 0 15px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+}
+
+.legend-dot--normal { background: var(--normal-color); }
+.legend-dot--caution { background: var(--caution-color); }
+.legend-dot--danger { background: var(--danger-color); }
+
+.body-map-slot {
+    width: 100%;
+    min-height: 490px;
+}
+
+/* Retain Streamlit's keyboard-accessible sidebar control, styled as the menu. */
+[data-testid="stSidebarCollapsedControl"] {
+    top: 45px;
+    left: 12px;
+}
+
+[data-testid="stSidebarCollapsedControl"] button {
+    width: 48px;
+    height: 48px;
+    border: 0;
     border-radius: 0;
+    color: var(--menu-color);
+    background: transparent;
 }
-.st-key-navigation_close button p, .st-key-navigation_open button p {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-}
-.st-key-navigation_close button::after, .st-key-navigation_open button::after {
+
+[data-testid="stSidebarCollapsedControl"] button::before {
     content: "";
     display: block;
-    flex: 0 0 24px;
-    width: 24px;
-    height: 24px;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: contain;
+    width: 37px;
+    height: 33px;
+    background: linear-gradient(
+        to bottom,
+        var(--menu-color) 0 5px, transparent 5px 14px,
+        var(--menu-color) 14px 19px, transparent 19px 28px,
+        var(--menu-color) 28px 33px
+    );
 }
-.st-key-navigation_close button::after {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2 2L22 22M22 2L2 22' fill='none' stroke='%23b3220d' stroke-width='3'/%3E%3C/svg%3E");
+
+[data-testid="stSidebarCollapsedControl"] button svg,
+[data-testid="stSidebarCollapsedControl"] button [data-testid="stIconMaterial"] {
+    display: none;
 }
-.st-key-navigation_open button::after {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M0 4H24M0 12H24M0 20H24' fill='none' stroke='%23b3220d' stroke-width='3'/%3E%3C/svg%3E");
+
+[data-testid="stSidebarCollapsedControl"] button:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 3px;
 }
-.st-key-navigation_links { padding-left: clamp(45px, 10vw, 100px); padding-right: 12px; }
-.st-key-navigation_links [data-testid="stButton"] { width: 100%; }
-.st-key-navigation_links button {
-    justify-content: flex-start;
-    width: 100%;
-    height: 46px;
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    color: #fff;
-}
-.st-key-navigation_links button p { font-family: "Montserrat", sans-serif; font-size: 17px; font-weight: 400; text-align: left; }
-.st-key-navigation_links button:hover { background: transparent; color: #d9432c; }
-.st-key-navigation_logout { margin: 40px 0 24px 40px; }
-.st-key-navigation_logout button { background: transparent; border: 0; }
-.st-key-workspace_content_open, .st-key-workspace_content_closed {
-    box-sizing: border-box;
-    min-height: 100svh;
-    padding: 36px 8vw 60px 12.6vw;
-    color: #fff;
-    font-family: "Montserrat", sans-serif;
-}
-.st-key-workspace_content_open { margin-left: var(--drawer-width); width: calc(100% - var(--drawer-width)); }
-.st-key-workspace_content_closed { margin-inline: auto; width: min(100%, 800px); padding: 36px 48px 60px; }
-.st-key-workspace .workspace-title {
-    width: max-content;
-    max-width: 100%;
-    font-family: "Audiowide", sans-serif;
-    font-size: clamp(32px, 4.9vw, 48px);
-    font-weight: 400;
-    line-height: 1.25;
-    letter-spacing: .12em;
-    transform: scaleX(1.23);
-    transform-origin: left center;
-    margin: 0;
-    padding: 0;
-}
-.st-key-workspace .about-copy { margin-top: 80px; max-width: 430px; }
-.st-key-workspace .about-copy h2 {
-    font-family: "Audiowide", sans-serif;
-    font-size: 18px;
-    font-weight: 400;
-    line-height: 1.25;
-    letter-spacing: .08em;
-    transform: scaleX(1.16);
-    transform-origin: left center;
-    margin: 0 0 18px;
-    padding: 0;
-}
-.st-key-workspace .about-copy p {
-    font-family: "Montserrat", sans-serif;
-    font-size: 16px;
-    font-weight: 400;
-    line-height: 1.25;
-    margin: 0 0 19px;
-}
-@media (max-width: 700px) {
-    .st-key-workspace { --drawer-width: min(340px, 86vw); }
-    .st-key-app_navigation { box-shadow: 12px 0 32px #0009; }
-    .st-key-navigation_links { padding-left: 58px; }
-    .st-key-workspace_content_open, .st-key-workspace_content_closed {
-        width: 100%;
-        margin: 0;
-        padding: 108px 28px 40px;
+
+@media (max-width: 850px) {
+    [data-testid="stMainBlockContainer"] {
+        padding: 90px 28px 36px;
     }
-    .st-key-workspace .workspace-title { font-size: clamp(28px, 8vw, 44px); transform: none; }
-    .st-key-workspace .about-copy { margin-top: 48px; }
+
+    .temperature-title {
+        margin: 0 0 44px;
+        font-size: clamp(44px, 10vw, 80px);
+    }
+
+    .st-key-temperature-content [data-testid="stHorizontalBlock"] {
+        flex-direction: column;
+    }
+
+    .st-key-temperature-content [data-testid="stColumn"] {
+        width: 100%;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .temperature-copy,
+    .temperature-legend {
+        font-size: 20px;
+        line-height: 1.45;
+    }
+
+    .temperature-legend { padding-left: 0; gap: 22px; }
+    .body-map-slot { min-height: 300px; }
 }
 
-/* Mission and Features artboards share the same centered title and reading width. */
-.st-key-editorial {
-    box-sizing: border-box;
+.body-map-frame {
+    height: 510px;
+    overflow: hidden;
+}
+.body-map-image {
     width: 100%;
-    min-height: 100svh;
-    padding: 36px 24px 60px;
-    background: #000;
-}
-.st-key-editorial .editorial-title {
-    width: max-content;
-    max-width: 100%;
-    margin: 0 auto;
-    padding: 0;
-    color: #fff;
-    font-family: "Audiowide", sans-serif;
-    font-size: clamp(28px, 4.9vw, 48px);
-    font-weight: 400;
-    line-height: 1.25;
-    letter-spacing: .12em;
-    transform: scaleX(1.2);
-    text-align: center;
-}
-.st-key-editorial .editorial-copy {
-    max-width: 735px;
-    margin: 92px auto 0;
-    color: #fff;
-    font-family: "Montserrat", sans-serif;
-}
-.st-key-editorial .editorial-copy p, .st-key-editorial .editorial-copy h2 {
-    margin: 0 0 20px;
-    padding: 0;
-    font-family: "Montserrat", sans-serif;
-    font-size: 17px;
-    font-weight: 400;
-    line-height: 1.18;
-}
-.st-key-workspace:has(.st-key-app_navigation) .st-key-editorial {
-    margin-left: var(--drawer-width);
-    width: calc(100% - var(--drawer-width));
-}
-.st-key-editorial .features-copy p, .st-key-editorial .features-copy h2 { font-size: 16px; line-height: 1.25; }
-@media (max-width: 700px) {
-    .st-key-editorial { padding: 100px 28px 40px; }
-    .st-key-editorial .editorial-title { font-size: clamp(24px, 6vw, 36px); transform: none; }
-    .st-key-editorial .editorial-copy { margin-top: 52px; }
-    .st-key-workspace:has(.st-key-app_navigation) .st-key-editorial { margin-left: 0; width: 100%; }
+    height: 100%;
+    object-fit: contain;
+    transform: scale(1.65);
+    transform-origin: 50% 40%;
 }
 
-/* Inicio: the black artboard fills the browser; Figma's editor frame is excluded. */
-.stApp:has(.st-key-landing) [data-testid="stHeader"] { display: none; }
-[data-testid="stMainBlockContainer"]:has(.st-key-landing) {
-    max-width: none;
-    width: 100%;
-    padding: 0;
+.reliability-title {
+    font-size: clamp(38px, 6vw, 82px);
+    overflow-wrap: anywhere;
 }
-.st-key-landing {
-    box-sizing: border-box;
-    min-height: 100svh;
-    padding: 20.5svh 24px 60px;
-    text-align: center;
-    background: #000;
+
+.statistical-title {
+    margin-left: 0;
+    margin-bottom: 172px;
+    font-size: clamp(44px, 7.4vw, 104px);
+    overflow-wrap: break-word;
 }
-.st-key-landing .welcome-title {
-    color: #fff;
-    font-family: "Audiowide", sans-serif;
-    font-size: clamp(20px, 4.8vw, 48px);
+
+.st-key-analysis-actions {
+    max-width: 262px;
+    margin-left: auto;
+    padding-top: 40px;
+}
+
+.st-key-analysis-actions,
+.st-key-analysis-actions [data-testid="stVerticalBlock"] {
+    gap: 94px !important;
+}
+
+.st-key-analysis-actions button {
+    min-height: 82px;
+    border: 0;
+    border-radius: 11px;
+    background: var(--menu-color);
+    color: var(--page-text);
+    opacity: 1;
+}
+
+.st-key-analysis-actions button p {
+    font-size: 26px;
     font-weight: 400;
-    letter-spacing: .145em;
-    line-height: 1.25;
-    white-space: nowrap;
-    transform: scaleX(1.25);
-    transform-origin: center;
-    margin: 0;
-    padding: 0;
-    text-align: center;
 }
-.st-key-landing .welcome-subtitle {
-    font-family: "Montserrat", sans-serif;
-    color: #fff;
-    font-size: clamp(14px, 2.5vw, 24px);
-    font-weight: 400;
-    line-height: 1.4;
-    text-align: center;
-    margin: 22px 0 0;
-    padding: 0;
+
+@media (max-width: 850px) {
+    .statistical-title { margin-bottom: 48px; }
+    .st-key-analysis-actions {
+        max-width: 100%;
+        margin-left: 0;
+        padding-top: 12px;
+    }
+    .st-key-analysis-actions,
+    .st-key-analysis-actions [data-testid="stVerticalBlock"] {
+        gap: 24px !important;
+    }
 }
-.st-key-landing [data-testid="stButton"] {
-    display: flex;
-    width: 100%;
-    justify-content: center;
-    margin-top: 49px;
-}
-.st-key-landing .st-key-landing_login, .st-key-landing .st-key-landing_signup { width: 100%; }
-.st-key-landing .st-key-landing_login [data-testid="stButton"] { margin-top: 100px; }
-.st-key-landing [data-testid="stButton"] button {
-    width: 155px;
-    height: 43px;
-    min-height: 43px;
-    padding: 0 12px;
-    background: #b3220d;
-    border: 1px solid #b3220d;
-    border-radius: 7px;
-    color: #fff;
-    font-family: "Montserrat", sans-serif;
-}
-.st-key-landing [data-testid="stButton"] button p { font-family: "Montserrat", sans-serif; font-size: 16px; font-weight: 400; }
-.st-key-landing [data-testid="stButton"] button:hover { background: #cc2a13; border-color: #cc2a13; }
-@media (max-width: 480px) {
-    .st-key-landing { padding: 20svh 12px 40px; }
-    .st-key-landing .welcome-title { font-size: clamp(15px, 4.6vw, 22px); letter-spacing: .08em; transform: none; }
-    .st-key-landing .welcome-subtitle { font-size: clamp(12px, 3.5vw, 16px); margin-top: 18px; }
-    .st-key-landing .st-key-landing_login [data-testid="stButton"] { margin-top: 70px; }
+
+.st-key-analysis-actions button:hover {
+    background: #d32b13;
+    color: white;
 }
