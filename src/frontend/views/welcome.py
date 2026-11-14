@@ -4,7 +4,12 @@ import streamlit as st
 
 from frontend import api
 from frontend.components.layout import navigate
-from frontend.views import information
+from frontend.components.session import clear_session, require_session, show_api_error
+from frontend.views import information, measurements
+from frontend.views.temperature import render_temperature
+from frontend.views.microcirculation import render_microcirculation
+from frontend.views.reliability import render_reliability
+from frontend.views.statistical_analysis import render_statistical_analysis
 
 
 SECTIONS = {
@@ -14,6 +19,11 @@ SECTIONS = {
     "microcirculation": "Microcirculation",
     "reliability": "Measurement Reliability",
     "analysis": "Statistical Analysis",
+    "profile": "My Profile",
+    "collect": "Record a Measurement",
+    "history": "Measurement History",
+    "daily": "Daily Summaries",
+    "analytics": "Period Analytics",
 }
 
 
@@ -22,6 +32,7 @@ def toggle_navigation() -> None:
 
 
 def select_section(section: str) -> None:
+    st.query_params["page"] = "welcome"
     st.query_params["section"] = section
     st.session_state["drawer_is_open"] = False
 
@@ -32,8 +43,7 @@ def sign_out() -> None:
     except api.ApiError as error:
         st.session_state["logout_notice"] = str(error)
     finally:
-        st.session_state.pop("access_token", None)
-        st.session_state.pop("user", None)
+        clear_session()
     navigate("login")
 
 
@@ -60,8 +70,8 @@ def render() -> None:
             return
 
         with st.container(key="workspace_content_open" if opened else "workspace_content_closed"):
-            st.markdown('<h1 class="workspace-title">WELCOME</h1>', unsafe_allow_html=True)
             if section == "welcome":
+                st.markdown('<h1 class="workspace-title">WELCOME</h1>', unsafe_allow_html=True)
                 st.markdown(
                     '<section class="about-copy" aria-labelledby="about-title">'
                     '<h2 id="about-title">ABOUT US</h2>'
@@ -76,5 +86,23 @@ def render() -> None:
                     unsafe_allow_html=True,
                 )
             else:
-                st.markdown(f'<section class="about-copy"><h2>{SECTIONS[section]}</h2></section>', unsafe_allow_html=True)
-                st.write("This section is coming soon.")
+                token = require_session()
+                try:
+                    with st.spinner('Checking your session…'):
+                        user = api.request('GET', '/auth/me', token)
+                    st.session_state['user'] = user
+                    renderers = {
+                        'temperature': render_temperature,
+                        'microcirculation': render_microcirculation,
+                        'reliability': render_reliability,
+                        'analysis': render_statistical_analysis,
+                        'profile': lambda: measurements.render_profile(user),
+                        'collect': lambda: measurements.render_collection(token),
+                        'history': lambda: measurements.render_history(token),
+                        'daily': lambda: measurements.render_daily(token),
+                        'analytics': lambda: measurements.render_analytics(token),
+                    }
+                    renderers[section]()
+                except api.ApiError as error:
+                    show_api_error(error)
+                    st.button('Retry connection')

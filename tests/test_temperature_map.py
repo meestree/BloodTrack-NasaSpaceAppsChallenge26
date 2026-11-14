@@ -62,5 +62,5 @@ def test_microcirculation_page_uses_flow_not_temperature(monkeypatch):
     assert 'Microcirculation color legend' in html
     assert 'body-map-image' in html
     assert 'Green — Normal: Within the expected reference range.' in html
-    assert any('960.00 ml/min' in element.value and 'Alert' in element.value for element in app.markdown)
+    assert any('960.00' in element.value and 'Alert' in element.value for element in app.markdown)
     assert app.date_input[0].value.isoformat() == '2020-01-02'

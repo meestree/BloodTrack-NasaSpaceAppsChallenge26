@@ -20,3 +20,26 @@ def database_path(tmp_path: Path) -> Path:
 def client(database_path: Path):
     with TestClient(create_app(database_path)) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def frontend_requests(client, monkeypatch):
+    """Adapt the real FastAPI responses to the frontend's requests transport."""
+    requests = pytest.importorskip('requests')
+    from urllib.parse import urlsplit
+    from frontend import api
+
+    calls = []
+    def send(method, url, **kwargs):
+        path = urlsplit(url).path
+        calls.append((method, path, kwargs.get('params', {})))
+        kwargs.pop('timeout', None)
+        result = client.request(method, path, **kwargs)
+        response = requests.Response()
+        response.status_code = result.status_code
+        response._content = result.content
+        response.headers.update(result.headers)
+        return response
+
+    monkeypatch.setattr(api.requests, 'request', send)
+    return calls

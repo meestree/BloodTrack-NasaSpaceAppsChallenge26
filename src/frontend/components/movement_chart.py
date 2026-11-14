@@ -4,8 +4,8 @@ from datetime import date, datetime, timezone
 import pandas as pd
 import streamlit as st
 
-from frontend.components.session import clear_session, require_session
-from frontend.services.api import ApiError, request
+from frontend.components.session import require_session, show_api_error
+from frontend.api import ApiError, request
 
 
 def chart_data(data: dict) -> pd.DataFrame:
@@ -55,14 +55,7 @@ def render_movement_chart() -> None:
                 'movimiento_unos': 'Movement-marked samples'}), hide_index=True)
         if st.button('Refresh movement data'):
             st.rerun()
-        if st.button('Sign out', key='reliability_logout'):
-            request('POST', '/auth/logout', token)
-            clear_session()
-            st.rerun()
     except ApiError as error:
-        if error.status == 401:
-            clear_session()
-            st.rerun()
-        st.error(str(error))
+        show_api_error(error)
         if st.button('Retry movement data'):
             st.rerun()

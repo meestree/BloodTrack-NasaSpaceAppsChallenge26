@@ -1,31 +1,34 @@
-"""Login and token state are private to each Streamlit session."""
+"""Private Streamlit session state and one authentication/error flow for all pages."""
 import streamlit as st
 
-from frontend.services.api import ApiError, request
+from frontend.api import ApiError
+from frontend.components.layout import navigate
+
+
+SESSION_KEYS = (
+    'access_token', 'user', 'drawer_is_open', 'map_date', 'map_date_initialized',
+    'reliability_dates', 'analysis_dates', 'analysis_metric',
+)
 
 
 def clear_session() -> None:
-    for key in ('access_token', 'map_date', 'map_date_initialized', 'reliability_dates', 'analysis_dates', 'analysis_metric'):
-        st.session_state.pop(key, None)
+    for key in list(st.session_state):
+        if key in SESSION_KEYS or key.startswith(('measure_', 'history_', 'daily_', 'period_')):
+            st.session_state.pop(key, None)
 
 
 def require_session() -> str:
     if st.session_state.get('access_token'):
         return st.session_state.access_token
-    st.info('Sign in to view your measurements.')
-    with st.form('login', clear_on_submit=True):
-        username = st.text_input('Username')
-        password = st.text_input('Password', type='password')
-        submitted = st.form_submit_button('Sign in')
-    if submitted:
-        if not username or not password:
-            st.error('Enter your username and password.')
-        else:
-            try:
-                with st.spinner('Signing in…'):
-                    result = request('POST', '/auth/login', json={'nombre_usuario': username, 'password': password})
-                st.session_state.access_token = result['access_token']
-                st.rerun()
-            except ApiError as error:
-                st.error(str(error))
-    st.stop()
+    st.session_state['logout_notice'] = 'Please log in to view your measurements.'
+    navigate('login')
+    st.rerun()
+
+
+def show_api_error(error: ApiError) -> None:
+    if error.status == 401:
+        clear_session()
+        st.session_state['logout_notice'] = str(error)
+        navigate('login')
+        st.rerun()
+    st.error(str(error))

@@ -7,6 +7,8 @@ from frontend.components.layout import back_home, navigate
 
 
 def render() -> None:
+    if notice := st.session_state.pop("signup_notice", None):
+        st.success(notice)
     if notice := st.session_state.pop("logout_notice", None):
         st.warning(notice)
     if st.session_state.get("access_token"):
@@ -30,7 +32,8 @@ def render() -> None:
             st.error("Enter your user and password.")
         else:
             try:
-                token, user = api.login(username.strip(), password)
+                with st.spinner("Signing in…"):
+                    token, user = api.login(username.strip(), password)
                 st.session_state["access_token"] = token
                 st.session_state["user"] = user
                 if remember:

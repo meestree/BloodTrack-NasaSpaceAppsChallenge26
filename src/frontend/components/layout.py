@@ -22,6 +22,7 @@ def load_styles() -> None:
 
 def navigate(page: str) -> None:
     st.query_params.pop("help", None)
+    st.query_params.pop("section", None)
     st.query_params["page"] = page
 
 
