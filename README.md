@@ -47,6 +47,35 @@ field distinguishes `real` and `simulated` data. Unknown fields are rejected.
 This nested JSON shape is an initial API design; confirm it against the device
 firmware before implementing ingestion.
 
-Only the health endpoint is implemented. Measurement ingestion, storage,
-baseline calculations, authentication, and the dashboard are future work.
+The health and authentication endpoints are implemented. Measurement ingestion,
+measurement storage, baseline calculations, and the dashboard are future work.
 No physiological formulas or blood-volume estimates are implemented.
+
+## Authentication
+
+Install the updated dependencies with `python -m pip install -e '.[dev]'`.
+On startup the API creates `users` and `auth_sessions` tables in
+`data/astronautas.db`, preserving existing tables. Tests use temporary databases.
+The source checkout must contain the `data/` directory.
+
+| Endpoint | JSON request / authorization | Result |
+| --- | --- | --- |
+| `POST /api/v1/auth/register` | `username`, `password` | Public user ID and username (201) |
+| `POST /api/v1/auth/login` | `username`, `password` | `access_token`, `token_type`, `expires_in` |
+| `GET /api/v1/auth/me` | `Authorization: Bearer <access_token>` | Public user ID and username |
+| `POST /api/v1/auth/logout` | `Authorization: Bearer <access_token>` | Revokes the current session (204) |
+
+Usernames are case-insensitive, 3–64 ASCII letters, digits, or underscores.
+Registration requires passwords of 12–128 characters. The server hashes
+passwords with salted Argon2id; clients send the original password over HTTPS.
+Neither passwords nor hashes are returned by the API, including validation errors.
+
+Sessions last one hour and survive restarts. Only SHA-256 hashes of random
+session tokens are stored; the original token is returned once at login.
+The frontend should keep it out of logs and send it in the authorization header.
+New protected routes must depend on `backend.api.auth.current_user`.
+
+Registration is currently open. Rate limiting, account recovery, email
+verification, and role-based authorization are not implemented. Use HTTPS and
+add login rate limiting before exposing this prototype publicly. Keep the live
+database out of Git; share schema through the initialization code instead.
