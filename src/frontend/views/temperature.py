@@ -7,7 +7,7 @@ from frontend.components.legend import render_temperature_legend
 
 
 def render_temperature() -> None:
-    st.html('<h1 class="temperature-title">temperature</h1>')
+    st.html('<h1 class="temperature-title">Temperature</h1>')
 
     with st.container(key="temperature-content"):
         explanation, body_map = st.columns([1.7, 1], gap="large")

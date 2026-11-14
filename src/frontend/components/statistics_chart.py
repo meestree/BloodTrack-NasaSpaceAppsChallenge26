@@ -5,8 +5,8 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from frontend.components.session import clear_session, require_session
-from frontend.services.api import ApiError, request
+from frontend.components.session import require_session, show_api_error
+from frontend.api import ApiError, request
 
 GROUPS = {'Neck / head': ('Cuello',), 'Arms': ('Brazo izquierdo', 'Brazo derecho'),
           'Legs': ('Pierna izquierda', 'Pierna derecha')}
@@ -31,7 +31,7 @@ def chart_rows(data: dict, parts: tuple) -> list[dict]:
 
 
 def make_chart(data: dict, parts: tuple, metric: str):
-    unit = '°C' if metric == 'temperatura' else 'ml/min'
+    unit = 'Temperature (API value)' if metric == 'temperatura' else 'Microcirculation (API value)'
     frame = alt.Data(values=chart_rows(data, parts))
     base = alt.Chart(frame).encode(
         x=alt.X('UTC:T', title='UTC hour' if data['granularity'] == 'hour' else 'UTC date', scale=alt.Scale(type='utc')),
@@ -79,8 +79,8 @@ def render_statistics_chart(metric: str) -> None:
                 st.info('No measurements for this body region in the selected range.')
                 continue
             st.altair_chart(make_chart(data, parts, metric), use_container_width=True)
-            reference = '35.5–37 °C' if metric == 'temperatura' else ('approximately 750 ml/min' if name == 'Neck / head' else '750–1,000 ml/min')
-            st.caption(f'Green dashed reference: {reference}.')
+            reference = '35.5–37' if metric == 'temperatura' else ('approximately 750' if name == 'Neck / head' else '750–1,000')
+            st.caption(f'Green dashed design reference: {reference}. Sensor units are not specified by the API.')
         with st.expander('Statistics by period'):
             st.dataframe(pd.DataFrame(data['items']).rename(columns={
                 'nombre': 'Body region', 'periodo': 'UTC period', 'muestras': 'Samples',
@@ -88,14 +88,7 @@ def render_statistics_chart(metric: str) -> None:
                 'minimo': 'Minimum', 'maximo': 'Maximum'}), hide_index=True)
         if st.button('Refresh analysis'):
             st.rerun()
-        if st.button('Sign out', key='analysis-logout'):
-            request('POST', '/auth/logout', token)
-            clear_session()
-            st.rerun()
     except ApiError as error:
-        if error.status == 401:
-            clear_session()
-            st.rerun()
-        st.error(str(error))
+        show_api_error(error)
         if st.button('Retry analysis'):
             st.rerun()

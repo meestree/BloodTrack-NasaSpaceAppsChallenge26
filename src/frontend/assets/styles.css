@@ -308,3 +308,54 @@
     .st-key-landing .welcome-subtitle { font-size: clamp(12px, 3.5vw, 16px); margin-top: 18px; }
     .st-key-landing .st-key-landing_login [data-testid="stButton"] { margin-top: 70px; }
 }
+
+/* API-backed workspaces need room for tables, charts, and accessible form labels. */
+.st-key-workspace_content_closed {
+    width: min(100%, 1100px);
+    padding-top: 105px;
+}
+.st-key-workspace [data-testid="stVerticalBlock"] { gap: 0.75rem; }
+.st-key-workspace [data-testid="stForm"] {
+    background: #191919;
+    padding: 24px;
+    border: 1px solid #444;
+}
+.st-key-workspace [data-testid="stTextInput"] { margin-bottom: 0; }
+.st-key-workspace [data-testid="stTextInput"] label {
+    justify-content: flex-start;
+    padding-bottom: 4px;
+}
+.st-key-workspace [data-testid="stCaptionContainer"] { text-align: left; margin-top: 4px; }
+.st-key-workspace [data-testid="stHorizontalBlock"] { align-items: flex-start; }
+.st-key-workspace [data-testid="stButton"] button { border-color: #666; }
+.temperature-title {
+    font-family: "Audiowide", sans-serif;
+    font-size: clamp(26px, 4vw, 42px);
+    margin-bottom: 28px;
+    overflow-wrap: anywhere;
+}
+.temperature-copy p { line-height: 1.6; margin-bottom: 20px; }
+.temperature-legend { list-style: none; padding: 0; }
+.temperature-legend li { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
+.legend-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+.legend-dot--normal { background: #00ed10; }
+.legend-dot--caution { background: #f5cf36; }
+.legend-dot--danger { background: #e44838; }
+.body-map-frame { width: 100%; text-align: center; }
+.body-map-image { max-width: 100%; max-height: 480px; object-fit: contain; }
+.st-key-landing .welcome-title { white-space: normal; transform: none; overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+    .st-key-workspace [data-testid="stHorizontalBlock"] { flex-wrap: wrap; }
+    .st-key-workspace [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+        width: 100% !important;
+        min-width: 0;
+        flex: 1 1 100%;
+    }
+    .st-key-workspace_content_open, .st-key-workspace_content_closed { padding: 105px 20px 40px; }
+    .st-key-workspace [data-testid="stForm"] { padding: 18px; }
+}
+.st-key-landing [data-testid="stExpander"] {
+    max-width: 400px;
+    margin: 36px auto 0;
+    text-align: left;
+}

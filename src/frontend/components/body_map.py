@@ -5,8 +5,8 @@ from pathlib import Path
 
 import streamlit as st
 
-from frontend.components.session import clear_session, require_session
-from frontend.services.api import ApiError, request
+from frontend.components.session import require_session, show_api_error
+from frontend.api import ApiError, request
 
 RESOURCES = Path(__file__).resolve().parents[2] / 'resources'
 PARTS = ('Cuello', 'Brazo izquierdo', 'Brazo derecho', 'Pierna izquierda', 'Pierna derecha')
@@ -52,13 +52,8 @@ def render_body_map(metric: str = 'temperatura') -> None:
                 latest = request('GET', '/measurements/latest', token)
                 st.session_state.map_date = date.fromisoformat(latest['date']) if latest['date'] else datetime.now(timezone.utc).date()
                 st.session_state.map_date_initialized = True
-            refresh, logout = st.columns(2)
-            if refresh.button('Latest readings'):
+            if st.button('Latest readings'):
                 st.session_state.map_date_initialized = False
-                st.rerun()
-            if logout.button('Sign out'):
-                request('POST', '/auth/logout', token)
-                clear_session()
                 st.rerun()
             selected = st.date_input('Measurement date (UTC)', max_value=datetime.now(timezone.utc).date(), key='map_date')
             data = request('GET', '/measurements/latest', token, params={'date': selected.isoformat()})
@@ -77,19 +72,16 @@ def render_body_map(metric: str = 'temperatura') -> None:
         else:
             st.warning('Some regions have no measurements for this date. The map is unavailable until all five regions have readings.')
         st.caption('Latest reading per region on the selected UTC date. Arms and legs use the more severe reading of the pair.')
+        st.caption('Values are shown as reported by the API; sensor units are not specified. Colors use the existing design reference ranges.')
         status = {'G': 'Normal', 'Y': 'Warning', 'R': 'Alert'} if metric == 'caudal' else {'G': 'Normal', 'Y': 'Caution', 'R': 'Danger'}
-        for part in PARTS:
+        for part in dict.fromkeys((*PARTS, *readings)):
             row = readings.get(part)
             if row:
-                unit = 'ml/min' if metric == 'caudal' else '°C'
-                st.write(f"**{part}** · {row[metric]:.2f} {unit} · {status[reading_color(row, part, metric)]}")
+                st.write(f"**{part}** · {row[metric]:.2f} · {status[reading_color(row, part, metric)]}")
                 st.caption(f"Recorded: {row['timestamp']} · Caudal: {row['caudal']} · Movement: {bool(row['movimiento'])}")
             else:
                 st.write(f'**{part}** · No measurement')
     except ApiError as error:
-        if error.status == 401:
-            clear_session()
-            st.rerun()
-        st.error(str(error))
+        show_api_error(error)
         if st.button('Retry'):
             st.rerun()

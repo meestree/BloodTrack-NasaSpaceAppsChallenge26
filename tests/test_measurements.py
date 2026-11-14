@@ -145,11 +145,9 @@ def test_latest_timestamp_offsets_and_ties(measured):
     assert result['items'][0]['temperatura'] == 37
 
 
-def test_streamlit_map_loads_api_and_changes_date(measured, monkeypatch):
+def test_streamlit_map_loads_api_and_changes_date(measured, frontend_requests):
     pytest.importorskip('streamlit')
     from streamlit.testing.v1 import AppTest
-    from frontend.components import body_map
-    from frontend.services.api import ApiError
     client, _ = measured
     with client.app.state.auth_store.connection() as c:
         c.executemany('INSERT INTO partes_corporales VALUES (?,?)',
@@ -157,16 +155,10 @@ def test_streamlit_map_loads_api_and_changes_date(measured, monkeypatch):
     at = datetime(2020, 1, 2, 12, tzinfo=timezone.utc)
     post(client, [item(part=p, temperature=36, at=at) for p in range(1, 6)])
 
-    def api(method, path, token=None, **kwargs):
-        response = client.request(method, '/api/v1' + path, **kwargs)
-        if response.status_code == 401:
-            raise ApiError('Expired', 401)
-        assert response.status_code == 200
-        return response.json()
-
-    monkeypatch.setattr(body_map, 'request', api)
     from pathlib import Path
     app = AppTest.from_file(Path(__file__).resolve().parents[1] / 'src/frontend/app.py', default_timeout=20)
+    app.query_params['page'] = 'welcome'
+    app.query_params['section'] = 'temperature'
     app.session_state['access_token'] = 'test-session'
     app.run()
     assert not app.exception
