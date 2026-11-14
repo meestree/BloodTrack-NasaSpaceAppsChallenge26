@@ -1,23 +1,22 @@
-"""Run from the repository root: streamlit run src/frontend/app.py."""
+"""Run with: streamlit run src/frontend/app.py."""
+
+from pathlib import Path
+import sys
 
 import streamlit as st
 
-from frontend.components.layout import configure_page, render_sidebar
-from frontend.views.temperature import render_temperature
-from frontend.views.reliability import render_reliability
-from frontend.views.statistical_analysis import render_statistical_analysis
-from frontend.views.microcirculation import render_microcirculation
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from frontend.components.layout import load_styles
+from frontend.views import home, login, signup, welcome
 
 
 def main() -> None:
-    configure_page()
-    temperature = st.Page(render_temperature, title="Temperature", default=True)
-    microcirculation = st.Page(render_microcirculation, title="Microcirculation", url_path="microcirculation")
-    reliability = st.Page(render_reliability, title="Measurement reliability", url_path="reliability")
-    analysis = st.Page(render_statistical_analysis, title="Statistical Analysis", url_path="statistical-analysis")
-    navigation = st.navigation([temperature, microcirculation, reliability, analysis], position="hidden")
-    render_sidebar(temperature, microcirculation, reliability, analysis)
-    navigation.run()
+    st.set_page_config(page_title="BloodTrack", layout="centered", initial_sidebar_state="collapsed")
+    load_styles()
+    views = {"home": home.render, "login": login.render, "signup": signup.render, "welcome": welcome.render}
+    views.get(st.query_params.get("page", "home"), home.render)()
 
 
 if __name__ == "__main__":
