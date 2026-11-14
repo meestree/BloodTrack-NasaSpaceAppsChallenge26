@@ -18,3 +18,5 @@ must remain excluded from Git.
 The current development focus is the backend. Use the `backend` branch for
 backend work and the `frontend` branch for frontend work. Do not switch branches
 without a task that calls for it.
+
+Database is located in data/astronautas.db

@@ -1,3 +1,7 @@
+---
+name: docs
+description: Requirements of the project
+---
 
 # AGENTS.md — NASA Space Apps
 
@@ -25,9 +29,9 @@ No chest sensors.
 All 5 regions are transmitted together in one JSON payload with a shared timestamp.
 
 Measurements:
-- **Bioimpedance:** `impedance_ohm` (Ω), all 5 regions.
+- **Temperature:** `celsius degree` (C), all 5 regions.
 - **Skin temperature:** `skin_temperature_c` (°C), 4 extremities.
-- **Muscle oxygenation:** `muscle_oxygen_saturation_pct` (%), optional, not yet confirmed.
+- **Movement:** `boolean` checks if the astronaut is moving during the data recopilation
 
 Use `null` for missing optional measurements.
 
