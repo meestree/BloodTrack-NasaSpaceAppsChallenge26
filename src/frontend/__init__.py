@@ -1,1 +1,1 @@
-"""Streamlit frontend, separate from the FastAPI backend."""
+"""Streamlit frontend for NASA Space Apps."""

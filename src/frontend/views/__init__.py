@@ -1,1 +1,1 @@
-"""Page renderers registered by the Streamlit entry point."""
+"""Login screens implemented from the supplied Figma designs."""
