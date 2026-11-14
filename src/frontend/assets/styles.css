@@ -1,7 +1,16 @@
 /* Colors, proportions, and spacing follow the supplied Figma screenshots. */
 :root { color-scheme: dark; }
 .stApp { background: #000; color: #fff; font-family: "Century Gothic", "Avenir Next", sans-serif; }
-[data-testid="stHeader"] { background: transparent; }
+[data-testid="stHeader"],
+[data-testid="stToolbar"],
+[data-testid="stStatusWidget"],
+[data-testid="stDecoration"],
+footer { display: none !important; }
+/* Keep input labels and length limits, without Streamlit's editing hints. */
+[data-testid="InputInstructions"] { display: none !important; }
+/* Hide the generated permalink controls beside headings on every page. */
+[data-testid="stHeaderActionElements"],
+a.anchor-link { display: none !important; }
 #MainMenu { display: none; }
 [data-testid="stAppDeployButton"] { display: none; }
 [data-testid="stMain"] { min-height: 100dvh; }
@@ -43,7 +52,30 @@
     min-height: 44px;
 }
 [data-testid="stTextInput"] input { background: #fff; color: #111; caret-color: #111; padding: 10px 12px; }
-[data-testid="stTextInput"] button { background: #fff; color: #333; }
+[data-testid="stTextInput"] button,
+[data-testid="stTextInput"] button:hover,
+[data-testid="stTextInput"] button:active {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #333;
+}
+/* Registration labels share the same alignment, typography, and spacing. */
+.st-key-signup_form [data-testid="stWidgetLabel"],
+.st-key-signup_form [data-testid="stTextInput"] label {
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+}
+.st-key-signup_form [data-testid="stWidgetLabel"] p,
+.st-key-signup_form .birth-label {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 400;
+    text-align: center;
+}
+.st-key-signup_form .birth-label { margin: 0; padding: 0 0 22px; }
+.st-key-signup_form [data-testid="stSelectbox"] { margin-bottom: 26px; }
 [data-testid="stCheckbox"] label { color: #fff; min-height: 32px; }
 [data-testid="stCheckbox"] label p { font-size: 11px; font-weight: 400; }
 [data-testid="stCheckbox"] [data-baseweb="checkbox"] > div:first-child { background: #fff; border-color: #fff; border-radius: 3px; }
@@ -65,7 +97,6 @@
 [data-testid="stHorizontalBlock"] [data-testid="stFormSubmitButton"] { margin-top: 0; }
 [data-testid="stForm"] a { color: #fff; font-size: 11px; text-decoration: none; }
 [data-testid="stForm"] a:hover { text-decoration: underline; }
-.forgot-link { text-align: right; padding-top: 5px; }
 [data-testid="stCaptionContainer"] { text-align: center; margin-top: 15px; }
 [data-testid="stCaptionContainer"] a { color: #ddd; }
 [data-testid="stAlert"] { margin-top: 12px; }
@@ -353,9 +384,4 @@
     }
     .st-key-workspace_content_open, .st-key-workspace_content_closed { padding: 105px 20px 40px; }
     .st-key-workspace [data-testid="stForm"] { padding: 18px; }
-}
-.st-key-landing [data-testid="stExpander"] {
-    max-width: 400px;
-    margin: 36px auto 0;
-    text-align: left;
 }

@@ -19,14 +19,8 @@ def render() -> None:
         st.title("Log In")
         username = st.text_input("User", value=st.session_state.get("remembered_user", ""), max_chars=64, autocomplete="username")
         password = st.text_input("Password", type="password", max_chars=128, autocomplete="current-password")
-        left, right = st.columns([1, 1])
-        with left:
-            remember = st.checkbox("Remember me", help="Remember your username during this browser session.")
-        with right:
-            st.markdown('<div class="forgot-link"><a href="?page=login&amp;help=password" target="_self">Forgot password?</a></div>', unsafe_allow_html=True)
+        remember = st.checkbox("Remember me", help="Remember your username during this browser session.")
         submitted = st.form_submit_button("Log In")
-    if st.query_params.get("help") == "password":
-        st.info("Password recovery is not available yet. Contact your account administrator.")
     if submitted:
         if not username.strip() or not password:
             st.error("Enter your user and password.")
@@ -44,5 +38,5 @@ def render() -> None:
                 st.rerun()
             except api.ApiError as error:
                 st.error(str(error))
-    st.caption('[Sign Up](?page=signup)')
+    st.button("Sign Up", key="login_signup", on_click=navigate, args=("signup",), type="tertiary")
     back_home()
