@@ -9,7 +9,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from backend.auth.schemas import LoginRequest, RegisterRequest, TokenResponse, UserResponse
 from backend.auth.security import SESSION_SECONDS, dummy_hash, hash_password, hash_token, verify_password
-from backend.storage.auth import AuthStore, DuplicateUsername
+from backend.storage.auth import AuthStore, DuplicateAccount
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 bearer = HTTPBearer(auto_error=False)
@@ -37,27 +37,30 @@ def current_user(store: Store, credentials: Credentials) -> UserResponse:
     user = store.session_user(hash_token(credentials.credentials), int(time()))
     if user is None:
         raise unauthorized()
-    return UserResponse(id=user["id"], username=user["username"])
+    return UserResponse(**dict(user))
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(body: RegisterRequest, store: Store) -> UserResponse:
     try:
-        user = store.create_user(body.username.lower(), hash_password(body.password.get_secret_value()))
-    except DuplicateUsername:
-        raise HTTPException(status_code=409, detail="Username already registered") from None
-    return UserResponse(**user)
+        user = store.create_user(
+            body.nombre_usuario.lower(), hash_password(body.password.get_secret_value()),
+            str(body.email).lower(), body.fecha_nacimiento,
+        )
+    except DuplicateAccount:
+        raise HTTPException(status_code=409, detail="Username or email already registered") from None
+    return UserResponse(**dict(user))
 
 
 @router.post("/login", response_model=TokenResponse)
 def login(body: LoginRequest, store: Store, response: Response) -> TokenResponse:
-    user = store.find_user(body.username.lower())
+    user = store.find_user(body.nombre_usuario.lower())
     valid = verify_password(body.password.get_secret_value(), user["password_hash"] if user else dummy_hash)
     if not valid or user is None:
         raise unauthorized()
     token = token_urlsafe(32)
     now = int(time())
-    store.create_session(hash_token(token), user["id"], now + SESSION_SECONDS, now)
+    store.create_session(hash_token(token), user["id_usuario"], now + SESSION_SECONDS, now)
     response.headers["Cache-Control"] = "no-store"
     response.headers["Pragma"] = "no-cache"
     return TokenResponse(access_token=token, expires_in=SESSION_SECONDS)

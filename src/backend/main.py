@@ -9,20 +9,24 @@ from fastapi.responses import JSONResponse
 
 from backend.api.router import router
 from backend.storage.auth import AuthStore
+from backend.storage.measurements import MeasurementStore
 
 
 def create_app(database_path: Path | None = None) -> FastAPI:
     """Build an independent application instance."""
     path = database_path if database_path is not None else Path(__file__).resolve().parents[2] / "data" / "astronautas.db"
     store = AuthStore(path)
+    measurements = MeasurementStore(store)
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
         store.initialize()
+        measurements.initialize()
         yield
 
     application = FastAPI(title="NASA Space Apps API", version="0.1.0", lifespan=lifespan)
     application.state.auth_store = store
+    application.state.measurement_store = measurements
 
     @application.exception_handler(RequestValidationError)
     async def validation_error(request: Request, error: RequestValidationError) -> JSONResponse:

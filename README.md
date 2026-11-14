@@ -54,18 +54,24 @@ No physiological formulas or blood-volume estimates are implemented.
 ## Authentication
 
 Install the updated dependencies with `python -m pip install -e '.[dev]'`.
-On startup the API creates `users` and `auth_sessions` tables in
-`data/astronautas.db`, preserving existing tables. Tests use temporary databases.
-The source checkout must contain the `data/` directory.
+The supplied `data/astronautas.db` must exist and contain `usuarios` and
+`vista_usuarios`. Startup validates that schema and creates only `auth_sessions`,
+linked to `usuarios.id_usuario`. It does not create a second users table or
+replace the supplied schema. Tests use temporary databases built from a schema
+snapshot with no personal data.
 
 | Endpoint | JSON request / authorization | Result |
 | --- | --- | --- |
-| `POST /api/v1/auth/register` | `username`, `password` | Public user ID and username (201) |
-| `POST /api/v1/auth/login` | `username`, `password` | `access_token`, `token_type`, `expires_in` |
-| `GET /api/v1/auth/me` | `Authorization: Bearer <access_token>` | Public user ID and username |
+| `POST /api/v1/auth/register` | `nombre_usuario`, `password`, `email`, `fecha_nacimiento` | Public user profile (201) |
+| `POST /api/v1/auth/login` | `nombre_usuario`, `password` | `access_token`, `token_type`, `expires_in` |
+| `GET /api/v1/auth/me` | `Authorization: Bearer <access_token>` | Public user profile |
 | `POST /api/v1/auth/logout` | `Authorization: Bearer <access_token>` | Revokes the current session (204) |
 
 Usernames are case-insensitive, 3–64 ASCII letters, digits, or underscores.
+Emails are validated and normalized to lowercase; duplicate usernames or emails
+return 409. Dates of birth must be valid, non-future `YYYY-MM-DD` strings.
+Profiles expose `id_usuario`, `nombre_usuario`, `email`, `fecha_nacimiento`,
+`edad`, and `creado_en`, using `vista_usuarios` for the calculated age.
 Registration requires passwords of 12–128 characters. The server hashes
 passwords with salted Argon2id; clients send the original password over HTTPS.
 Neither passwords nor hashes are returned by the API, including validation errors.
@@ -79,3 +85,28 @@ Registration is currently open. Rate limiting, account recovery, email
 verification, and role-based authorization are not implemented. Use HTTPS and
 add login rate limiting before exposing this prototype publicly. Keep the live
 database out of Git; share schema through the initialization code instead.
+
+### Postman JSON bodies
+
+Register with `POST http://127.0.0.1:8000/api/v1/auth/register`:
+
+```json
+{
+  "nombre_usuario": "astronaut",
+  "password": "example-password-change-me",
+  "email": "astronaut@example.com",
+  "fecha_nacimiento": "1995-05-21"
+}
+```
+
+Log in with `POST http://127.0.0.1:8000/api/v1/auth/login`:
+
+```json
+{
+  "nombre_usuario": "astronaut",
+  "password": "example-password-change-me"
+}
+```
+
+Use Body → raw → JSON in Postman. For `/me` and `/logout`, use Authorization →
+Bearer Token and paste the returned `access_token`.
