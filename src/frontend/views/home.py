@@ -2,12 +2,13 @@
 
 import streamlit as st
 
-from frontend.components.layout import navigate
+from frontend.components.layout import navigate, render_logo
 from frontend.views import login
 
 
 def render() -> None:
     with st.container(key="landing"):
+        render_logo()
         st.markdown(
             '<h1 class="welcome-title">WELCOME TO BLOODTRACK</h1>'
             '<p class="welcome-subtitle">Monitoring Health Beyond Earth</p>',

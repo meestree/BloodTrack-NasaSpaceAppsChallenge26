@@ -1,5 +1,15 @@
 /* Colors, proportions, and spacing follow the supplied Figma screenshots. */
 :root { color-scheme: dark; }
+.app-logo { text-align: center; margin: 0 0 24px; }
+.app-logo img { display: inline-block; width: 112px; height: 112px; box-sizing: border-box; padding: 12px; border-radius: 16px; background: #fff; object-fit: contain; }
+.st-key-app_navigation .app-logo { margin: 8px 0 24px; }
+.st-key-app_navigation .app-logo img { width: 72px; height: 72px; padding: 8px; border-radius: 12px; }
+.login-loading { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; background: rgba(0, 0, 0, .6); }
+.login-loading-card { padding: 40px; border-radius: 12px; background: rgba(0, 0, 0, .6); text-align: center; color: white; }
+.login-loading-card h1 { font-family: "Audiowide", sans-serif; font-size: 28px; }
+.login-loading-spinner { display: inline-block; width: 44px; height: 44px; border: 3px solid #555; border-top-color: white; border-radius: 50%; animation: login-spin .8s linear infinite; }
+@keyframes login-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .login-loading-spinner { animation: none; } }
 .flow-ranges { overflow-x: auto; margin: 12px 0; }
 .flow-ranges table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .flow-ranges th, .flow-ranges td { padding: 8px; border: 1px solid #555; text-align: left; }
@@ -396,10 +406,9 @@ a.anchor-link { display: none !important; }
 .temperature-copy p { line-height: 1.6; margin-bottom: 20px; }
 .st-key-temperature-content .temperature-copy p:last-child { margin-bottom: 0; }
 .st-key-temperature-content [data-testid="stVerticalBlock"] { gap: 0; }
-.st-key-temperature-content .temperature-legend { margin-top: 0; }
-.temperature-legend { list-style: none; padding: 0; }
-.temperature-legend li { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
-.legend-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+.temperature-legend { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; width: max-content; max-width: 100%; list-style: none; padding: 0; margin: 8px 0 0; font-size: 14px; line-height: 1.4; }
+.temperature-legend li { display: flex; align-items: center; gap: 5px; margin: 0; white-space: nowrap; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .legend-dot--normal { background: #00ed10; }
 .legend-dot--caution { background: #f5cf36; }
 .legend-dot--danger { background: #e44838; }

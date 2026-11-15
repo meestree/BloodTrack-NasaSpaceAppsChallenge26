@@ -227,3 +227,54 @@ def test_map_navigation_reuses_readings_and_refreshes_on_demand(signed_in):
     button(screen, 'Latest readings').click().run()
     assert [(method, path) for method, path, _ in calls] == [('GET', '/api/v1/measurements/latest')]
     assert not screen.exception
+
+
+def test_login_loading_is_rendered_before_authentication(signed_in, monkeypatch):
+    import streamlit as st
+    events = []
+    original_html, original_login = st.html, api.login
+
+    def html(body, **kwargs):
+        if 'class="login-loading"' in body:
+            events.append('loading')
+        return original_html(body, **kwargs)
+
+    def authenticate(username, password):
+        assert st.query_params['page'] == 'loading'
+        assert events == ['loading']
+        assert '_pending_login' not in st.session_state
+        events.append('authenticate')
+        return original_login(username, password)
+
+    monkeypatch.setattr(st, 'html', html)
+    monkeypatch.setattr(api, 'login', authenticate)
+    screen = app('login')
+    screen.text_input(key='login_username').set_value('astronaut')
+    screen.text_input(key='login_password').set_value(PASSWORD)
+    button(screen, 'Log In').click().run()
+    assert not screen.exception
+    assert screen.query_params['page'] == 'welcome'
+    assert events == ['loading', 'authenticate']
+    assert '_pending_login' not in screen.session_state
+    assert 'login_password' not in screen.session_state
+
+
+def test_failed_login_returns_from_loading_without_retaining_password(signed_in):
+    screen = app('login')
+    screen.text_input(key='login_username').set_value('astronaut')
+    screen.text_input(key='login_password').set_value('wrong-password')
+    button(screen, 'Log In').click().run()
+    assert not screen.exception
+    assert screen.query_params['page'] == 'login'
+    assert screen.error and 'Invalid or expired' in screen.error[0].value
+    assert '_pending_login' not in screen.session_state
+    assert screen.text_input(key='login_password').value == ''
+    assert 'access_token' not in screen.session_state
+
+
+def test_loading_without_submission_returns_to_login(connected):
+    _, calls = connected
+    screen = app('loading')
+    assert screen.query_params['page'] == 'login'
+    assert not screen.exception
+    assert not calls

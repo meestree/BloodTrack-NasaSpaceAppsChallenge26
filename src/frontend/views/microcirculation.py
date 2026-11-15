@@ -15,7 +15,8 @@ def render_microcirculation() -> None:
                     <p>Our body map uses a color-coded system to display microcirculation levels:</p>
                 </div>
             ''')
-            render_microcirculation_legend()
             readings_table = st.container()
         with body_map:
             render_body_map(metric='caudal', readings_container=readings_table)
+        with explanation:
+            render_microcirculation_legend()

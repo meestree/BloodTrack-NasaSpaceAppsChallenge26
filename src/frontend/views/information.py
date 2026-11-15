@@ -23,7 +23,8 @@ FEATURES = (
     ("01. Temperature", "Track skin temperature in different body regions using a color-coded map to highlight deviations from normal ranges."),
     ("02. Microcirculation", "Visualize blood flow indicators across the body and identify potential circulatory changes."),
     ("03. Reliability", "Monitor astronaut movement to detect when sensor measurements may be unreliable."),
-    ("04. Data Analysis", "Explore temperature and microcirculation trends through graphs with statistical averages, standard deviations, and reference limits."),
+    ("04. Statistical Analysis", "Explore temperature and microcirculation trends through graphs with statistical averages, standard deviations, and reference limits."),
+    ("05. Daily Summaries", "Review daily sample counts, average temperature and microcirculation, and movement-marked sample counts by body region and UTC date. Filter by time window and body region to compare recorded days."),
 )
 
 
@@ -38,7 +39,7 @@ def render_about() -> None:
             '<h2 id="about-us-title">About Us</h2>'
             '<p>We are Space Dracula, a team bringing together science, technology, '
             'and creativity to tackle the challenges of living beyond Earth.</p>'
-            f'<h3>Our vision</h3>{mission}'
+            f'<h3>Our mission</h3>{mission}'
             f'<h3>Features</h3>{features}</section>'
         )
 

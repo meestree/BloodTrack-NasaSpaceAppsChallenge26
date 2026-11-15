@@ -50,6 +50,25 @@ def reset_map_date() -> None:
     api.clear_data_cache()
 
 
+def render_movement_summary(selected: date, token: str) -> None:
+    """Show movement totals for every sample on the map's selected UTC date."""
+    try:
+        data = api.read('/measurements/movement', token, params={
+            'start_date': selected.isoformat(), 'end_date': selected.isoformat(),
+        })
+    except ApiError as error:
+        show_api_error(error)
+        st.button('Retry movement summary', on_click=api.clear_data_cache)
+        return
+    total = sum(row['muestras'] for row in data['items'])
+    if not total:
+        st.info('No samples available for the movement summary on this UTC date.')
+        return
+    moving = sum(row['movimiento_unos'] for row in data['items'])
+    st.metric('Samples recorded during movement', f'{moving:,}')
+    st.caption(f'{moving / total:.1%} of {total:,} collected samples across all body regions.')
+
+
 def render_body_map(metric: str = 'temperatura', readings_container=None) -> None:
     label = 'Microcirculation (PU)' if metric == 'caudal' else 'Temperature'
     token = require_session()
@@ -94,6 +113,7 @@ def render_body_map(metric: str = 'temperatura', readings_container=None) -> Non
             if metric != 'caudal':
                 formats['Flow rate (PU)'] = '{:.2f}'
             st.table(pd.DataFrame(rows).style.hide(axis='index').format(formats, na_rep='—'))
+            render_movement_summary(selected, token)
     except ApiError as error:
         show_api_error(error)
         st.button('Retry', on_click=reset_map_date)

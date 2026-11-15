@@ -52,8 +52,12 @@ def test_microcirculation_page_uses_flow_not_temperature(monkeypatch):
     readings['Left arm']['caudal'] = 7
     assert map_filename(readings, 'caudal') == 'HR_AY_LG.png'
     assert map_filename(readings) == 'HG_AG_LG.png'
-    monkeypatch.setattr(body_map.api, 'read', lambda *args, **kwargs:
-        {'date': '2020-01-02', 'items': list(readings.values())})
+    def read(path, *args, **kwargs):
+        if path == '/measurements/movement':
+            return {'items': [{'muestras': 205, 'movimiento_unos': 30}]}
+        return {'date': '2020-01-02', 'items': list(readings.values())}
+
+    monkeypatch.setattr(body_map.api, 'read', read)
     app = AppTest.from_string('from frontend.views.microcirculation import render_microcirculation\nrender_microcirculation()')
     app.session_state['access_token'] = 'test'
     app.run()
@@ -61,8 +65,62 @@ def test_microcirculation_page_uses_flow_not_temperature(monkeypatch):
     html = '\n'.join(element.value for element in app.get('html'))
     assert 'Microcirculation color legend' in html
     assert 'body-map-image' in html
-    assert 'Green — Normal: Within the expected reference range.' in html
+    assert 'Green = fine' in html
     table = app.table[0].value.set_index('Body region')
     assert table.loc['Neck', 'Microcirculation (PU)'] == 61
     assert table.loc['Neck', 'Status'] == 'Alert'
     assert app.date_input[0].value.isoformat() == '2020-01-02'
+
+
+@pytest.mark.parametrize('page', ['temperature', 'microcirculation'])
+def test_map_movement_summary_follows_selected_day(monkeypatch, page):
+    from datetime import date
+    from streamlit.testing.v1 import AppTest
+    from frontend.components import body_map
+
+    calls = []
+
+    def read(path, token, params=None):
+        if path == '/measurements/movement':
+            calls.append(params)
+            if params['start_date'] == '2020-01-03':
+                return {'items': [{'muestras': 10, 'movimiento_unos': 0}]}
+            return {'items': [{'muestras': 100, 'movimiento_unos': 10},
+                              {'muestras': 105, 'movimiento_unos': 20}]}
+        return {'date': '2020-01-02', 'items': [
+            {'nombre': part, 'temperatura': 36, 'caudal': 20, 'movimiento': 0}
+            for part in PARTS
+        ]}
+
+    monkeypatch.setattr(body_map.api, 'read', read)
+    app = AppTest.from_string(
+        f'from frontend.views.{page} import render_{page}\nrender_{page}()')
+    app.session_state['access_token'] = 'test'
+    app.run()
+    assert not app.exception
+    assert app.metric[0].label == 'Samples recorded during movement'
+    assert app.metric[0].value == '30'
+    assert '14.6% of 205' in app.caption[0].value
+    assert calls[-1] == {'start_date': '2020-01-02', 'end_date': '2020-01-02'}
+
+    app.date_input[0].set_value(date(2020, 1, 3)).run()
+    assert not app.exception
+    assert app.metric[0].value == '0'
+    assert '0.0% of 10' in app.caption[0].value
+    assert calls[-1] == {'start_date': '2020-01-03', 'end_date': '2020-01-03'}
+
+
+def test_movement_summary_without_samples_has_no_percentage(monkeypatch):
+    from streamlit.testing.v1 import AppTest
+    from frontend.components import body_map
+
+    monkeypatch.setattr(body_map.api, 'read', lambda *args, **kwargs: {'items': []})
+    app = AppTest.from_string(
+        'from datetime import date\n'
+        'from frontend.components.body_map import render_movement_summary\n'
+        'render_movement_summary(date(2020, 1, 2), "test")')
+    app.run()
+    assert not app.exception
+    assert app.info
+    assert not app.metric
+    assert not app.caption

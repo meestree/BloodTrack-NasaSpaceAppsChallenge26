@@ -17,8 +17,9 @@ def render_temperature() -> None:
                     <p>Our body map uses a color-coded system to display temperature levels:</p>
                 </div>
             """)
-            render_temperature_legend()
             readings_table = st.container()
 
         with body_map:
             render_body_map(readings_container=readings_table)
+        with explanation:
+            render_temperature_legend()

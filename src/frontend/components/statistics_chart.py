@@ -48,7 +48,7 @@ def chart_rows(data: dict, parts: tuple) -> list[dict]:
 
 
 def make_chart(data: dict, parts: tuple, metric: str):
-    unit = 'Temperature (API value)' if metric == 'temperatura' else 'Microcirculation (PU)'
+    unit = 'Temperature (degrees Celsius)' if metric == 'temperatura' else 'Microcirculation (PU)'
     frame = alt.Data(values=chart_rows(data, parts))
     base = alt.Chart(frame).encode(
         x=alt.X('UTC:T', title='UTC hour' if data['granularity'] == 'hour' else 'UTC date', scale=alt.Scale(type='utc')),

@@ -8,6 +8,16 @@ import streamlit as st
 from frontend.components.assets import image_data_url
 
 
+LOGO_PATH = Path(__file__).resolve().parents[1] / "assets" / "logo.png"
+
+
+def render_logo() -> None:
+    st.html(
+        f'<div class="app-logo"><img src="{image_data_url(LOGO_PATH)}" '
+        'alt="BloodTrack logo" width="112" height="112"></div>'
+    )
+
+
 def load_styles() -> None:
     assets = Path(__file__).resolve().parents[1] / "assets"
     paths = [assets / 'styles.css', *(assets / 'fonts').glob('*.ttf'),

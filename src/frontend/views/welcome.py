@@ -3,7 +3,7 @@
 import streamlit as st
 
 from frontend import api
-from frontend.components.layout import navigate
+from frontend.components.layout import navigate, render_logo
 from frontend.components.session import clear_session, require_session, show_api_error
 from frontend.views import information, measurements
 from frontend.views.temperature import render_temperature
@@ -52,6 +52,7 @@ def render() -> None:
         if opened:
             with st.container(key="app_navigation"):
                 st.button("Close navigation", key="navigation_close", on_click=toggle_navigation)
+                render_logo()
                 with st.container(key="navigation_links"):
                     for slug, label in SECTIONS.items():
                         st.button(label, key=f"section_{slug}", on_click=select_section, args=(slug,))
