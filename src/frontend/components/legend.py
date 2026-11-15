@@ -1,6 +1,7 @@
 """Text labels keep the legend understandable without color perception."""
 
 import streamlit as st
+from frontend.components.flow import FLOW_RANGES
 
 
 def render_temperature_legend() -> None:
@@ -27,3 +28,15 @@ def render_microcirculation_legend() -> None:
                 <span>Red — Alert: Significant deviation from normal values.</span></li>
         </ul>
     ''')
+    rows = ''.join(
+        f'<tr><th scope="row">{zone}</th><td>&lt; {low} PU</td>'
+        f'<td>{low}–{normal_low} PU</td><td>{normal_low}–{normal_high} PU</td>'
+        f'<td>{normal_high}–{high} PU</td><td>&gt; {high} PU</td></tr>'
+        for zone, (low, normal_low, normal_high, high) in FLOW_RANGES.items()
+    )
+    st.html(
+        '<div class="flow-ranges"><table aria-label="Microcirculation thresholds in PU">'
+        '<thead><tr><th>Region</th><th>Low danger</th><th>Low warning</th>'
+        '<th>Normal</th><th>High warning</th><th>High danger</th></tr></thead>'
+        f'<tbody>{rows}</tbody></table></div>'
+    )

@@ -41,5 +41,5 @@ def frontend_requests(client, monkeypatch):
         response.headers.update(result.headers)
         return response
 
-    monkeypatch.setattr(api.requests, 'request', send)
+    monkeypatch.setattr(api, '_send', send)
     return calls

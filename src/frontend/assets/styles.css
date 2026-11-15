@@ -1,5 +1,33 @@
 /* Colors, proportions, and spacing follow the supplied Figma screenshots. */
 :root { color-scheme: dark; }
+.flow-ranges { overflow-x: auto; margin: 12px 0; }
+.flow-ranges table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.flow-ranges th, .flow-ranges td { padding: 8px; border: 1px solid #555; text-align: left; }
+.st-key-analysis-actions [data-testid="stButton"] button { min-height: 56px; padding: 12px 20px; width: 100%; }
+.st-key-analysis-actions [data-testid="stButton"] button p { font-size: 20px; }
+/* A translucent panel keeps page content readable over the shared image. */
+.st-key-landing,
+.st-key-about_page,
+.st-key-workspace_content_open,
+.st-key-workspace_content_closed,
+.st-key-editorial,
+[data-testid="stMainBlockContainer"]:has(.st-key-signup_form) {
+    background-color: rgba(0, 0, 0, 0.6) !important;
+}
+.st-key-landing:has(.st-key-index_login) { padding-top: 64px; }
+.st-key-index_login { max-width: 432px; margin: 40px auto 0; text-align: left; }
+.st-key-index_login [data-testid="stButton"] { margin-top: 20px; }
+.st-key-login_actions [data-testid="stFormSubmitButton"] { text-align: right; margin-top: 0; }
+.st-key-login_actions [data-testid="stFormSubmitButton"] button { margin-left: auto; margin-right: 0; }
+.st-key-login_actions [data-testid="stHorizontalBlock"] { align-items: center; }
+[data-testid="stMainBlockContainer"]:has(.st-key-about_page) { max-width: 900px; padding-top: 40px; }
+.st-key-about_us { max-width: 800px; margin: 40px auto 0; text-align: left; }
+.about-us-copy { font-family: "Montserrat", sans-serif; line-height: 1.6; }
+.about-us-copy h2 { font-family: "Audiowide", sans-serif; text-align: center; margin-bottom: 24px; }
+.about-us-copy h3 { margin-top: 24px; font-size: 20px; }
+@media (max-width: 480px) {
+    .st-key-landing:has(.st-key-index_login) { padding-top: 36px; }
+}
 .stApp { background: #000; color: #fff; font-family: "Century Gothic", "Avenir Next", sans-serif; }
 [data-testid="stHeader"],
 [data-testid="stToolbar"],
@@ -21,7 +49,7 @@ a.anchor-link { display: none !important; }
 [data-testid="stVerticalBlock"] { gap: 0; }
 [data-testid="stVerticalBlockBorderWrapper"] { border: 0; }
 [data-testid="stForm"] {
-    background: #b3220d;
+    background: rgba(0, 0, 0, 0.6);
     border: none;
     border-radius: 7px;
     padding: 34px 48px 25px;
@@ -81,7 +109,7 @@ a.anchor-link { display: none !important; }
 [data-testid="stCheckbox"] [data-baseweb="checkbox"] > div:first-child { background: #fff; border-color: #fff; border-radius: 3px; }
 [data-testid="stHorizontalBlock"] { gap: 8px; align-items: center; }
 [data-testid="stButton"] button, [data-testid="stFormSubmitButton"] button {
-    background: #000;
+    background: rgba(0, 0, 0, 0.6);
     border: 1px solid #000;
     border-radius: 7px;
     min-height: 32px;
@@ -232,7 +260,7 @@ a.anchor-link { display: none !important; }
     width: 100%;
     min-height: 100svh;
     padding: 36px 24px 60px;
-    background: #000;
+    background: transparent;
 }
 .st-key-editorial .editorial-title {
     width: max-content;
@@ -286,7 +314,7 @@ a.anchor-link { display: none !important; }
     min-height: 100svh;
     padding: 20.5svh 24px 60px;
     text-align: center;
-    background: #000;
+    background: transparent;
 }
 .st-key-landing .welcome-title {
     color: #fff;
@@ -325,14 +353,14 @@ a.anchor-link { display: none !important; }
     height: 43px;
     min-height: 43px;
     padding: 0 12px;
-    background: #b3220d;
-    border: 1px solid #b3220d;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #555;
     border-radius: 7px;
     color: #fff;
     font-family: "Montserrat", sans-serif;
 }
 .st-key-landing [data-testid="stButton"] button p { font-family: "Montserrat", sans-serif; font-size: 16px; font-weight: 400; }
-.st-key-landing [data-testid="stButton"] button:hover { background: #cc2a13; border-color: #cc2a13; }
+.st-key-landing [data-testid="stButton"] button:hover { background: rgba(0, 0, 0, 0.85); border-color: #fff; }
 @media (max-width: 480px) {
     .st-key-landing { padding: 20svh 12px 40px; }
     .st-key-landing .welcome-title { font-size: clamp(15px, 4.6vw, 22px); letter-spacing: .08em; transform: none; }
@@ -366,6 +394,9 @@ a.anchor-link { display: none !important; }
     overflow-wrap: anywhere;
 }
 .temperature-copy p { line-height: 1.6; margin-bottom: 20px; }
+.st-key-temperature-content .temperature-copy p:last-child { margin-bottom: 0; }
+.st-key-temperature-content [data-testid="stVerticalBlock"] { gap: 0; }
+.st-key-temperature-content .temperature-legend { margin-top: 0; }
 .temperature-legend { list-style: none; padding: 0; }
 .temperature-legend li { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
 .legend-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }

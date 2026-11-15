@@ -9,7 +9,7 @@ class MeasurementInput(BaseModel):
     id_parte: int = Field(gt=0, strict=True)
     timestamp: AwareDatetime
     temperatura: float
-    caudal: float
+    caudal: float = Field(description="Microcirculation measured in perfusion units (PU).")
     movimiento: Literal[0, 1]
 
     @field_validator("timestamp")

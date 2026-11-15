@@ -6,7 +6,7 @@ from frontend import api
 from frontend.components.layout import back_home, navigate
 
 
-def render() -> None:
+def render(embedded: bool = False) -> None:
     if notice := st.session_state.pop("signup_notice", None):
         st.success(notice)
     if notice := st.session_state.pop("logout_notice", None):
@@ -19,8 +19,12 @@ def render() -> None:
         st.title("Log In")
         username = st.text_input("User", value=st.session_state.get("remembered_user", ""), max_chars=64, autocomplete="username")
         password = st.text_input("Password", type="password", max_chars=128, autocomplete="current-password")
-        remember = st.checkbox("Remember me", help="Remember your username during this browser session.")
-        submitted = st.form_submit_button("Log In")
+        with st.container(key="login_actions"):
+            remember_column, submit_column = st.columns([1.2, 1])
+            with remember_column:
+                remember = st.checkbox("Remember me", help="Remember your username during this browser session.")
+            with submit_column:
+                submitted = st.form_submit_button("Log In")
     if submitted:
         if not username.strip() or not password:
             st.error("Enter your user and password.")
@@ -38,5 +42,6 @@ def render() -> None:
                 st.rerun()
             except api.ApiError as error:
                 st.error(str(error))
-    st.button("Sign Up", key="login_signup", on_click=navigate, args=("signup",), type="tertiary")
-    back_home()
+    if not embedded:
+        st.button("Sign Up", key="login_signup", on_click=navigate, args=("signup",), type="tertiary")
+        back_home()

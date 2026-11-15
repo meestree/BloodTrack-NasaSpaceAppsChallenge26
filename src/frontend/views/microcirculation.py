@@ -12,18 +12,10 @@ def render_microcirculation() -> None:
         with explanation:
             st.html('''
                 <div class="temperature-copy">
-                    <p>In microgravity, the redistribution of body fluids can affect blood
-                    flow in different regions of the body. Monitoring microcirculation
-                    helps identify potential changes in blood supply to peripheral tissues.</p>
                     <p>Our body map uses a color-coded system to display microcirculation levels:</p>
                 </div>
             ''')
             render_microcirculation_legend()
-            st.html('''
-                <div class="temperature-copy temperature-copy--closing">
-                    <p>This visualization helps identify potential circulatory changes
-                    that may require further monitoring.</p>
-                </div>
-            ''')
+            readings_table = st.container()
         with body_map:
-            render_body_map(metric='caudal')
+            render_body_map(metric='caudal', readings_container=readings_table)

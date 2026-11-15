@@ -2,12 +2,12 @@
 import pandas as pd
 import streamlit as st
 
-from frontend.api import request
+from frontend.api import read, clear_data_cache
 
 
 def body_parts(token: str) -> dict[int, str]:
     with st.spinner('Loading body regions…'):
-        return {row['id_parte']: row['nombre'] for row in request('GET', '/body-parts', token)}
+        return {row['id_parte']: row['nombre'] for row in read('/body-parts', token)}
 
 
 def filters(token: str, key: str) -> tuple[dict, dict]:
@@ -30,15 +30,24 @@ def show_table(data: dict, parts: dict) -> None:
         st.info('No measurements in this UTC window for the selected regions.')
         return
     frame = pd.DataFrame(data['items'])
-    frame.insert(0, 'Body region', frame['id_parte'].map(parts))
-    st.dataframe(frame, hide_index=True, use_container_width=True)
+    for part_id, rows in frame.groupby('id_parte', sort=True):
+        st.subheader(parts.get(part_id, f'Body region {part_id}'), anchor=False)
+        table = rows[['fecha', 'muestras', 'temperatura_media', 'caudal_media', 'movimiento_unos']].rename(columns={
+            'fecha': 'Date', 'muestras': 'Samples',
+            'temperatura_media': 'Average temperature', 'caudal_media': 'Average flow rate (PU)',
+            'movimiento_unos': 'Movements registered',
+        })
+        st.table(table.style.hide(axis='index').format({
+            'Samples': '{:,.0f}', 'Average temperature': '{:,.2f}',
+            'Average flow rate (PU)': '{:,.2f}', 'Movements registered': '{:,.0f}',
+        }))
 
 
 def render_daily(token: str) -> None:
     st.title('Daily summaries')
     params, parts = filters(token, 'daily')
     with st.spinner('Loading daily summaries…'):
-        data = request('GET', '/measurements/daily', token, params=params)
+        data = read('/measurements/daily', token, params=params)
     show_table(data, parts)
     st.caption('Daily means and movement-marked sample counts, grouped by region and UTC date.')
-    st.button('Refresh daily summaries')
+    st.button('Refresh daily summaries', on_click=clear_data_cache)

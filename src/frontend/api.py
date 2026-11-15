@@ -1,8 +1,90 @@
 """One server-side API client for every page; credentials never enter browser URLs."""
 
 import os
+from copy import deepcopy
+from datetime import datetime, timezone
+from time import monotonic
 
 import requests
+
+
+def _state():
+    # Keep the transport usable in scripts/tests without a Streamlit session.
+    try:
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+    except ImportError:
+        return None
+    if get_script_run_ctx(suppress_warning=True) is None:
+        return None
+    import streamlit as st
+    return st.session_state
+
+
+def _base_url():
+    return (os.environ.get('API_BASE_URL') or os.environ.get('NASA_API_URL')
+            or 'http://127.0.0.1:8000/api/v1').rstrip('/')
+
+
+def begin_run():
+    """Validate cached private data once per page rerun, never across reruns."""
+    state = _state()
+    if state is not None:
+        state.pop('_api_verified', None)
+
+
+def clear_data_cache():
+    state = _state()
+    if state is not None:
+        state.pop('_api_data', None)
+
+
+def close_client():
+    state = _state()
+    if state is not None:
+        session = state.pop('_api_transport', None)
+        if session is not None:
+            session.close()
+        for key in ('_api_data', '_api_identity', '_api_verified'):
+            state.pop(key, None)
+
+
+def _send(method, url, **kwargs):
+    state = _state()
+    if state is None:
+        return requests.request(method, url, **kwargs)
+    if '_api_transport' not in state:
+        state['_api_transport'] = requests.Session()
+    # Headers (including tokens) belong to this request, not the pooled session.
+    return state['_api_transport'].request(method, url, **kwargs)
+
+
+def read(path: str, token: str, params: dict | None = None):
+    """Bounded, short-lived GET cache kept exclusively in the current user session."""
+    if not (path in ('/body-parts', '/measurements') or path.startswith('/measurements/')):
+        return request('GET', path, token, params=params)
+    state = _state()
+    if state is None:
+        return request('GET', path, token, params=params)
+    identity = (_base_url(), token)
+    if state.get('_api_identity') != identity:
+        state['_api_data'] = {}
+        state['_api_identity'] = identity
+        state.pop('_api_verified', None)
+    cache = state.setdefault('_api_data', {})
+    key = (path, tuple(sorted((params or {}).items())), datetime.now(timezone.utc).date())
+    entry = cache.get(key)
+    if entry is not None and monotonic() < entry[0]:
+        if state.get('_api_verified') != identity:
+            request('GET', '/auth/me', token)
+        return deepcopy(entry[1])
+    result = request('GET', path, token, params=params)
+    cache[key] = (monotonic() + (300 if path == '/body-parts' else 15), deepcopy(result))
+    if path == '/measurements/latest' and not params and result.get('date'):
+        dated_key = (path, (('date', result['date']),), key[2])
+        cache[dated_key] = cache[key]
+    while len(cache) > 24:
+        cache.pop(next(iter(cache)))
+    return result
 
 
 class ApiError(Exception):
@@ -16,16 +98,20 @@ class ApiError(Exception):
 
 def request(method: str, path: str, token: str | None = None, **kwargs):
     # Keep both existing configuration names working after consolidating the clients.
-    base = (os.environ.get("API_BASE_URL") or os.environ.get("NASA_API_URL")
-            or "http://127.0.0.1:8000/api/v1").rstrip("/")
+    base = _base_url()
     headers = {"Accept": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     try:
-        response = requests.request(method, f"{base}{path}", headers=headers, timeout=15, **kwargs)
+        response = _send(method, f"{base}{path}", headers=headers, timeout=(3.05, 15), **kwargs)
     except requests.RequestException:
         raise ApiError("Cannot reach the API. Check that the backend is running.") from None
     if not response.ok:
+        if response.status_code == 401:
+            clear_data_cache()
+            state = _state()
+            if state is not None:
+                state.pop('_api_verified', None)
         messages = {
             401: "Invalid or expired credentials. Please log in again.",
             409: "Username or email already registered. Try another or log in.",
@@ -50,6 +136,8 @@ def request(method: str, path: str, token: str | None = None, **kwargs):
                 fields["id_parte"] = "Choose an available body region."
         raise ApiError(messages.get(response.status_code, "The API could not complete the request. Please try again."),
                        response.status_code, fields)
+    if method.upper() not in ('GET', 'HEAD'):
+        clear_data_cache()
     if response.status_code == 204:
         return None
     try:
@@ -58,6 +146,11 @@ def request(method: str, path: str, token: str | None = None, **kwargs):
         raise ApiError("The API returned an invalid response. Please try again.") from None
     if not isinstance(result, (dict, list)):
         raise ApiError("The API returned an invalid response. Please try again.")
+    protected = path in ('/auth/me', '/body-parts', '/measurements') or path.startswith('/measurements/')
+    if token and protected:
+        state = _state()
+        if state is not None:
+            state['_api_verified'] = (base, token)
     return result
 
 

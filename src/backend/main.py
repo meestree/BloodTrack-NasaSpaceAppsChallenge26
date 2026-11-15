@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.middleware.gzip import GZipMiddleware
 
 from backend.api.router import router
 from backend.storage.auth import AuthStore
@@ -25,6 +26,7 @@ def create_app(database_path: Path | None = None) -> FastAPI:
         yield
 
     application = FastAPI(title="NASA Space Apps API", version="0.1.0", lifespan=lifespan)
+    application.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=5)
     application.state.auth_store = store
     application.state.measurement_store = measurements
 

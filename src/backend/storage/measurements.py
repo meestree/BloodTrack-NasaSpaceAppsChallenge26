@@ -1,5 +1,6 @@
 """User-scoped collection, UTC history, and persisted daily aggregates."""
 from datetime import date, datetime
+from math import sqrt
 
 from backend.measurements.schemas import MeasurementBatch
 from backend.storage.auth import AuthStore
@@ -7,6 +8,24 @@ from backend.storage.auth import AuthStore
 
 class UnknownBodyPart(Exception):
     pass
+
+
+class SampleDeviation:
+    """Stable sample deviation for SQLite grouped queries (Welford's algorithm)."""
+
+    def __init__(self):
+        self.count = 0
+        self.mean = 0.0
+        self.m2 = 0.0
+
+    def step(self, value):
+        self.count += 1
+        delta = value - self.mean
+        self.mean += delta / self.count
+        self.m2 += delta * (value - self.mean)
+
+    def finalize(self):
+        return sqrt(max(0.0, self.m2) / (self.count - 1)) if self.count > 1 else None
 
 
 class MeasurementStore:
@@ -25,6 +44,14 @@ class MeasurementStore:
                 movimiento_unos INTEGER NOT NULL,
                 PRIMARY KEY (id_usuario, id_parte, fecha)
             )""")
+            # Match expressions used by UTC filtering and offset-aware ordering.
+            connection.execute('''CREATE INDEX IF NOT EXISTS idx_registros_usuario_instante
+                ON registros(id_usuario, julianday(timestamp) DESC, id_registro DESC)''')
+            connection.execute('''CREATE INDEX IF NOT EXISTS idx_registros_usuario_dia_parte_instante
+                ON registros(id_usuario, date(timestamp), id_parte,
+                             julianday(timestamp) DESC, id_registro DESC)''')
+            connection.execute('''CREATE INDEX IF NOT EXISTS idx_resumenes_usuario_fecha
+                ON resumenes_diarios(id_usuario, fecha, id_parte)''')
             # Rebuild on startup to incorporate pre-existing/imported measurements.
             connection.execute("DELETE FROM resumenes_diarios")
             connection.execute("""INSERT INTO resumenes_diarios
@@ -110,62 +137,52 @@ class MeasurementStore:
                 if row is None:
                     return {"date": None, "items": []}
                 selected = date.fromisoformat(row[0])
-            rows = connection.execute("""WITH ranked AS (
-                SELECT r.*, p.nombre,
-                    ROW_NUMBER() OVER (PARTITION BY r.id_parte
-                        ORDER BY julianday(r.timestamp) DESC, r.id_registro DESC) AS rank
-                FROM registros r JOIN partes_corporales p ON p.id_parte = r.id_parte
-                WHERE r.id_usuario = ? AND date(r.timestamp) = ?)
-                SELECT id_registro, id_usuario, id_parte, nombre, timestamp,
-                       temperatura, caudal, movimiento
-                FROM ranked WHERE rank = 1 ORDER BY id_parte""", (user_id, selected.isoformat()))
+            rows = connection.execute("""SELECT r.id_registro, r.id_usuario, r.id_parte,
+                       p.nombre, r.timestamp, r.temperatura, r.caudal, r.movimiento
+                FROM partes_corporales p JOIN registros r ON r.id_registro = (
+                    SELECT id_registro FROM registros
+                    WHERE id_usuario = ? AND date(timestamp) = ? AND id_parte = p.id_parte
+                    ORDER BY julianday(timestamp) DESC, id_registro DESC LIMIT 1)
+                ORDER BY r.id_parte""", (user_id, selected.isoformat()))
             return {"date": selected.isoformat(), "items": [dict(row) for row in rows]}
 
     def movement(self, user_id: int, start: date, end: date, part: int | None) -> dict:
         hourly = start == end
         pattern = '%Y-%m-%dT%H:00:00Z' if hourly else '%Y-%m-%d'
         with self.database.connection() as connection:
-            rows = connection.execute('''SELECT strftime(?, timestamp) AS periodo,
-                COUNT(*) AS muestras, SUM(movimiento) AS movimiento_unos
-                FROM registros WHERE id_usuario = ? AND date(timestamp) BETWEEN ? AND ?
-                AND (? IS NULL OR id_parte = ?)
-                GROUP BY periodo ORDER BY periodo''',
-                (pattern, user_id, start.isoformat(), end.isoformat(), part, part))
+            if hourly:
+                rows = connection.execute('''SELECT strftime(?, timestamp) AS periodo,
+                    COUNT(*) AS muestras, SUM(movimiento) AS movimiento_unos
+                    FROM registros WHERE id_usuario = ? AND date(timestamp) = ?
+                    AND (? IS NULL OR id_parte = ?)
+                    GROUP BY periodo ORDER BY periodo''',
+                    (pattern, user_id, start.isoformat(), part, part))
+            else:
+                # These totals are maintained transactionally by collect().
+                rows = connection.execute('''SELECT fecha AS periodo, SUM(muestras) AS muestras,
+                    SUM(movimiento_unos) AS movimiento_unos FROM resumenes_diarios
+                    WHERE id_usuario = ? AND fecha BETWEEN ? AND ?
+                    AND (? IS NULL OR id_parte = ?)
+                    GROUP BY fecha ORDER BY fecha''',
+                    (user_id, start.isoformat(), end.isoformat(), part, part))
             return {'from': start.isoformat(), 'to': end.isoformat(),
                     'granularity': 'hour' if hourly else 'day',
                     'items': [dict(row) for row in rows]}
 
     def statistics(self, user_id: int, start: date, end: date, metric: str) -> dict:
         """Welford sample statistics avoid cancellation in variance calculations."""
-        from math import sqrt
         assert metric in ('temperatura', 'caudal')
         pattern = '%Y-%m-%dT%H:00:00Z' if start == end else '%Y-%m-%d'
-        groups = {}
         with self.database.connection() as connection:
+            connection.create_aggregate('sample_deviation', 1, SampleDeviation)
             rows = connection.execute(f'''SELECT r.id_parte, p.nombre,
-                strftime(?, r.timestamp) AS periodo, r.{metric} AS valor
+                strftime(?, r.timestamp) AS periodo, COUNT(*) AS muestras,
+                AVG(r.{metric}) AS media, MIN(r.{metric}) AS minimo,
+                MAX(r.{metric}) AS maximo, sample_deviation(r.{metric}) AS desviacion_estandar
                 FROM registros r JOIN partes_corporales p ON p.id_parte = r.id_parte
                 WHERE r.id_usuario = ? AND date(r.timestamp) BETWEEN ? AND ?
-                ORDER BY julianday(r.timestamp), r.id_registro''',
+                GROUP BY r.id_parte, periodo ORDER BY r.id_parte, periodo''',
                 (pattern, user_id, start.isoformat(), end.isoformat()))
-            for row in rows:
-                key = (row['id_parte'], row['periodo'])
-                if key not in groups:
-                    groups[key] = {'id_parte': row['id_parte'], 'nombre': row['nombre'],
-                        'periodo': row['periodo'], 'muestras': 0, 'media': 0.,
-                        'm2': 0., 'minimo': row['valor'], 'maximo': row['valor']}
-                group = groups[key]
-                group['muestras'] += 1
-                delta = row['valor'] - group['media']
-                group['media'] += delta / group['muestras']
-                group['m2'] += delta * (row['valor'] - group['media'])
-                group['minimo'] = min(group['minimo'], row['valor'])
-                group['maximo'] = max(group['maximo'], row['valor'])
-        items = []
-        for key in sorted(groups):
-            group = groups[key]
-            m2 = group.pop('m2')
-            group['desviacion_estandar'] = sqrt(max(0., m2) / (group['muestras'] - 1)) if group['muestras'] > 1 else None
-            items.append(group)
+            items = [dict(row) for row in rows]
         return {'from': start.isoformat(), 'to': end.isoformat(), 'metric': metric,
                 'granularity': 'hour' if start == end else 'day', 'items': items}

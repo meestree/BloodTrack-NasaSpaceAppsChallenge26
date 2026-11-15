@@ -11,15 +11,9 @@ def render_reliability() -> None:
         with explanation:
             st.html('''
                 <div class="temperature-copy">
-                    <p>Astronaut movement can affect sensor contact with the skin and
-                    cause signal interference, especially in microcirculation measurements,
-                    reducing the accuracy of the results.</p>
-                    <p>Our application tracks samples marked with movement over time and displays
-                    it through a graph, allowing periods with more movement-marked samples to be identified.</p>
                     <p>By comparing this data with physiological measurements, we can
                     identify when results may be distorted, preventing measurement errors
                     from being mistaken for actual physiological changes.</p>
                 </div>
             ''')
-        with chart:
-            render_movement_chart()
+            render_movement_chart(chart_container=chart)

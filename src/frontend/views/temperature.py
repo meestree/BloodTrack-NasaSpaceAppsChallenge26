@@ -14,18 +14,11 @@ def render_temperature() -> None:
         with explanation:
             st.html("""
                 <div class="temperature-copy">
-                    <p>In microgravity, changes in blood circulation can affect skin
-                    temperature. Monitoring different body regions helps identify
-                    unusual variations that may indicate changes in peripheral blood flow.</p>
                     <p>Our body map uses a color-coded system to display temperature levels:</p>
                 </div>
             """)
             render_temperature_legend()
-            st.html("""
-                <div class="temperature-copy temperature-copy--closing">
-                    <p>This visualization helps detect temperature changes that may
-                    require further monitoring.</p>
-                </div>
-            """)
+            readings_table = st.container()
+
         with body_map:
-            render_body_map()
+            render_body_map(readings_container=readings_table)

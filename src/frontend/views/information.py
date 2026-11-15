@@ -27,6 +27,22 @@ FEATURES = (
 )
 
 
+def render_about() -> None:
+    """Combined team vision and features, shared by the index and About Us page."""
+    with st.container(key="about_us"):
+        mission = ''.join(f'<p>{escape(paragraph)}</p>' for paragraph in MISSION)
+        features = ''.join(f'<h3>{escape(label)}</h3><p>{escape(description)}</p>'
+                           for label, description in FEATURES)
+        st.html(
+            '<section class="about-us-copy" aria-labelledby="about-us-title">'
+            '<h2 id="about-us-title">About Us</h2>'
+            '<p>We are Space Dracula, a team bringing together science, technology, '
+            'and creativity to tackle the challenges of living beyond Earth.</p>'
+            f'<h3>Our vision</h3>{mission}'
+            f'<h3>Features</h3>{features}</section>'
+        )
+
+
 def render(section: str) -> None:
     title = "OUR MISSION" if section == "mission" else "FEATURES"
     with st.container(key="editorial"):

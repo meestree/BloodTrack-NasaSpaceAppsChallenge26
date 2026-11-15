@@ -3,6 +3,7 @@
 import streamlit as st
 
 from frontend.components.layout import navigate
+from frontend.views import login
 
 
 def render() -> None:
@@ -12,5 +13,6 @@ def render() -> None:
             '<p class="welcome-subtitle">Monitoring Health Beyond Earth</p>',
             unsafe_allow_html=True,
         )
-        st.button("Log In", key="landing_login", on_click=navigate, args=("login",))
-        st.button("Get started", key="landing_signup", on_click=navigate, args=("signup",))
+        with st.container(key="index_login"):
+            login.render(embedded=True)
+            st.button("Get started", key="landing_signup", on_click=navigate, args=("signup",))

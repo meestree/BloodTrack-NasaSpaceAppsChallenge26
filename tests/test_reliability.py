@@ -26,7 +26,7 @@ def test_reliability_page_date_range_changes_chart(monkeypatch):
     from datetime import date
     calls = []
 
-    def api(method, path, token=None, **kwargs):
+    def api(path, token=None, **kwargs):
         if path.endswith('latest'):
             return {'date': '2020-01-02', 'items': []}
         dates = kwargs['params']
@@ -37,7 +37,7 @@ def test_reliability_page_date_range_changes_chart(monkeypatch):
                 'items': [{'periodo': '2020-01-02T10:00:00Z' if hourly else '2020-01-02',
                            'muestras': 10, 'movimiento_unos': 3}]}
 
-    monkeypatch.setattr(movement_chart, 'request', api)
+    monkeypatch.setattr(movement_chart, 'read', api)
     app = AppTest.from_string('from frontend.views.reliability import render_reliability\nrender_reliability()')
     app.session_state['access_token'] = 'test'
     app.run()

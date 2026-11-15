@@ -13,8 +13,7 @@ from frontend.views.statistical_analysis import render_statistical_analysis
 
 
 SECTIONS = {
-    "mission": "Our Mission",
-    "features": "Features",
+    "about": "About Us",
     "temperature": "Temperature",
     "microcirculation": "Microcirculation",
     "reliability": "Measurement Reliability",
@@ -44,10 +43,10 @@ def sign_out() -> None:
 
 
 def render() -> None:
-    section = st.query_params.get("section", "welcome")
-    if section not in SECTIONS and section != "welcome":
-        section = "welcome"
-    opened = st.session_state.setdefault("drawer_is_open", section == "welcome")
+    section = st.query_params.get("section", "about")
+    if section not in SECTIONS:
+        section = "about"
+    opened = st.session_state.setdefault("drawer_is_open", section == "about")
 
     with st.container(key="workspace"):
         if opened:
@@ -61,32 +60,12 @@ def render() -> None:
         else:
             st.button("Open navigation", key="navigation_open", on_click=toggle_navigation)
 
-        if section in {"mission", "features"}:
-            information.render(section)
-            return
-
         with st.container(key="workspace_content_open" if opened else "workspace_content_closed"):
-            if section == "welcome":
-                st.markdown('<h1 class="workspace-title">WELCOME</h1>', unsafe_allow_html=True)
-                st.markdown(
-                    '<section class="about-copy" aria-labelledby="about-title">'
-                    '<h2 id="about-title">ABOUT US</h2>'
-                    '<p>Space exploration has taught us to push the boundaries of technology. '
-                    'Now, it is time to understand the limits of our own bodies.</p>'
-                    '<p>We are Space Dracula, a team that brings together science, technology, '
-                    'and creativity to tackle the challenges of living beyond Earth.</p>'
-                    '<p>We believe that the future of space exploration is not just about building '
-                    'spacecraft capable of travelling further, but also about developing tools that '
-                    'help humans adapt to environments our bodies were never designed for.</p>'
-                    '</section>',
-                    unsafe_allow_html=True,
-                )
+            if section == "about":
+                information.render_about()
             else:
                 token = require_session()
                 try:
-                    with st.spinner('Checking your session…'):
-                        user = api.request('GET', '/auth/me', token)
-                    st.session_state['user'] = user
                     renderers = {
                         'temperature': render_temperature,
                         'microcirculation': render_microcirculation,
