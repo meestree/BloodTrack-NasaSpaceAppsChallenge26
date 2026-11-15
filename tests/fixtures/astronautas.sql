@@ -32,11 +32,11 @@ CREATE TABLE partes_corporales (
     id_parte INTEGER PRIMARY KEY,
     nombre   TEXT NOT NULL UNIQUE
         CHECK (nombre IN (
-            'Cuello',
-            'Brazo izquierdo',
-            'Brazo derecho',
-            'Pierna izquierda',
-            'Pierna derecha'
+            'Neck',
+            'Left arm',
+            'Right arm',
+            'Left leg',
+            'Right leg'
         ))
 );
 

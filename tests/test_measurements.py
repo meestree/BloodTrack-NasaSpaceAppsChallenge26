@@ -12,7 +12,7 @@ def measured(client):
     with store.connection() as c:
         c.execute("INSERT INTO usuarios (nombre_usuario,password_hash,email,fecha_nacimiento) VALUES ('one','unused','one@example.com','1990-01-01')")
         c.execute("INSERT INTO usuarios (nombre_usuario,password_hash,email,fecha_nacimiento) VALUES ('two','unused','two@example.com','1990-01-01')")
-        c.executemany("INSERT INTO partes_corporales VALUES (?, ?)", [(1, 'Cuello'), (2, 'Brazo izquierdo')])
+        c.executemany("INSERT INTO partes_corporales VALUES (?, ?)", [(1, 'Neck'), (2, 'Left arm')])
         user = dict(c.execute("SELECT * FROM vista_usuarios WHERE id_usuario = 1").fetchone())
     client.app.dependency_overrides[current_user] = lambda: UserResponse(**user)
     yield client, user
@@ -125,7 +125,7 @@ def test_latest_by_utc_date_and_user(measured):
     data = client.get('/api/v1/measurements/latest').json()
     assert data['date'] == '2020-01-02'
     assert [row['temperatura'] for row in data['items']] == [37, 39.5]
-    assert data['items'][0]['nombre'] == 'Cuello'
+    assert data['items'][0]['nombre'] == 'Neck'
     assert client.get('/api/v1/measurements/latest?date=2020-01-03').json()['items'] == []
     assert client.get('/api/v1/measurements/latest?date=bad').status_code == 422
     user['id_usuario'] = 2
@@ -151,7 +151,7 @@ def test_streamlit_map_loads_api_and_changes_date(measured, frontend_requests):
     client, _ = measured
     with client.app.state.auth_store.connection() as c:
         c.executemany('INSERT INTO partes_corporales VALUES (?,?)',
-            [(3, 'Brazo derecho'), (4, 'Pierna izquierda'), (5, 'Pierna derecha')])
+            [(3, 'Right arm'), (4, 'Left leg'), (5, 'Right leg')])
     at = datetime(2020, 1, 2, 12, tzinfo=timezone.utc)
     post(client, [item(part=p, temperature=36, at=at) for p in range(1, 6)])
 
@@ -231,3 +231,34 @@ def test_statistics_hourly_daily_metrics_and_isolation(measured):
     assert client.get(path, params=params).json()['items'] == []
     client.app.dependency_overrides.clear()
     assert client.get(path, params=params).status_code == 401
+
+
+def test_timestamp_queries_use_utc_expression_indexes(measured):
+    client, _ = measured
+    with client.app.state.auth_store.connection() as c:
+        latest_plan = c.execute('''EXPLAIN QUERY PLAN SELECT date(timestamp) FROM registros
+            WHERE id_usuario = 1 ORDER BY julianday(timestamp) DESC, id_registro DESC LIMIT 1''').fetchall()
+        assert any('idx_registros_usuario_instante' in row['detail'] for row in latest_plan)
+        assert not any('TEMP B-TREE' in row['detail'] for row in latest_plan)
+        range_plan = c.execute('''EXPLAIN QUERY PLAN SELECT COUNT(*) FROM registros
+            WHERE id_usuario = 1 AND date(timestamp) BETWEEN '2020-01-02' AND '2020-01-03' ''').fetchall()
+        assert any('idx_registros_usuario_dia_parte_instante' in row['detail'] for row in range_plan)
+
+
+def test_statistics_variance_stays_stable_for_large_close_values(measured):
+    client, _ = measured
+    at = datetime(2020, 1, 2, 10, tzinfo=timezone.utc)
+    post(client, [item(at=at, flow=1e12 + 1), item(at=at, flow=1e12 + 3)])
+    data = client.get('/api/v1/measurements/statistics', params={
+        'start_date': '2020-01-02', 'end_date': '2020-01-02', 'metric': 'caudal'}).json()
+    assert data['items'][0]['media'] == 1e12 + 2
+    assert data['items'][0]['desviacion_estandar'] == pytest.approx(2 ** .5)
+
+
+def test_large_history_responses_are_compressed(measured):
+    client, _ = measured
+    post(client, [item() for _ in range(100)])
+    response = client.get('/api/v1/measurements', headers={'Accept-Encoding': 'gzip'})
+    assert response.headers['content-encoding'] == 'gzip'
+    assert response.json()['total'] == 100
+    assert len(response.json()['items']) == 100

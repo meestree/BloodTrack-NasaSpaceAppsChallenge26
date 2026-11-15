@@ -1,15 +1,18 @@
 """Body maps driven exclusively by authenticated API measurements."""
-from base64 import b64encode
 from datetime import date, datetime, timezone
 from pathlib import Path
 
 import streamlit as st
+import pandas as pd
 
 from frontend.components.session import require_session, show_api_error
-from frontend.api import ApiError, request
+from frontend.api import ApiError
+from frontend import api
+from frontend.components.assets import image_data_url
+from frontend.components.flow import flow_ranges
 
 RESOURCES = Path(__file__).resolve().parents[2] / 'resources'
-PARTS = ('Cuello', 'Brazo izquierdo', 'Brazo derecho', 'Pierna izquierda', 'Pierna derecha')
+PARTS = ('Neck', 'Left arm', 'Right arm', 'Left leg', 'Right leg')
 
 
 def temperature_color(value: float) -> str:
@@ -22,11 +25,10 @@ def temperature_color(value: float) -> str:
 
 
 def caudal_color(value: float, part: str) -> str:
-    if value < 300 or value > (950 if part == 'Cuello' else 20000):
+    danger_low, normal_low, normal_high, danger_high = flow_ranges(part)
+    if value < danger_low or value > danger_high:
         return 'R'
-    if part == 'Cuello':
-        return 'Y' if value < 700 or value >= 850 else 'G'
-    return 'G' if 750 <= value <= 1000 else 'Y'
+    return 'G' if normal_low <= value <= normal_high else 'Y'
 
 
 def reading_color(row: dict, part: str, metric: str) -> str:
@@ -43,45 +45,55 @@ def map_filename(readings: dict, metric: str = 'temperatura') -> str | None:
     return f'H{colors[0]}_A{arms}_L{legs}.png'
 
 
-def render_body_map(metric: str = 'temperatura') -> None:
-    label = 'Microcirculation' if metric == 'caudal' else 'Temperature'
+def reset_map_date() -> None:
+    st.session_state.pop('map_date_initialized', None)
+    api.clear_data_cache()
+
+
+def render_body_map(metric: str = 'temperatura', readings_container=None) -> None:
+    label = 'Microcirculation (PU)' if metric == 'caudal' else 'Temperature'
     token = require_session()
     try:
         with st.spinner(f'Loading {label.lower()} measurements…'):
+            latest = None
             if not st.session_state.get('map_date_initialized'):
-                latest = request('GET', '/measurements/latest', token)
+                latest = api.read('/measurements/latest', token)
                 st.session_state.map_date = date.fromisoformat(latest['date']) if latest['date'] else datetime.now(timezone.utc).date()
                 st.session_state.map_date_initialized = True
-            if st.button('Latest readings'):
-                st.session_state.map_date_initialized = False
-                st.rerun()
+            st.button('Latest readings', on_click=reset_map_date)
             selected = st.date_input('Measurement date (UTC)', max_value=datetime.now(timezone.utc).date(), key='map_date')
-            data = request('GET', '/measurements/latest', token, params={'date': selected.isoformat()})
+            data = (latest if latest is not None else
+                    api.read('/measurements/latest', token, params={'date': selected.isoformat()}))
         readings = {row['nombre']: row for row in data['items']}
         if not readings:
-            st.info('No measurements recorded on this UTC date.')
+            with readings_container if readings_container is not None else st.container():
+                st.info('No measurements recorded on this UTC date.')
             return
         filename = map_filename(readings, metric)
         if filename:
             image = RESOURCES / filename
             if image.is_file():
-                encoded = b64encode(image.read_bytes()).decode('ascii')
-                st.html(f'<div class="body-map-frame"><img class="body-map-image" src="data:image/png;base64,{encoded}" alt="{label} map: neck, arms and legs. Individual readings and statuses are listed below."></div>')
+                st.html(f'<div class="body-map-frame"><img class="body-map-image" src="{image_data_url(image)}" alt="{label} map: neck, arms and legs. Individual readings and statuses are listed below."></div>')
             else:
                 st.error('The body map image is unavailable.')
         else:
             st.warning('Some regions have no measurements for this date. The map is unavailable until all five regions have readings.')
-        st.caption('Latest reading per region on the selected UTC date. Arms and legs use the more severe reading of the pair.')
-        st.caption('Values are shown as reported by the API; sensor units are not specified. Colors use the existing design reference ranges.')
         status = {'G': 'Normal', 'Y': 'Warning', 'R': 'Alert'} if metric == 'caudal' else {'G': 'Normal', 'Y': 'Caution', 'R': 'Danger'}
+        rows = []
         for part in dict.fromkeys((*PARTS, *readings)):
             row = readings.get(part)
-            if row:
-                st.write(f"**{part}** · {row[metric]:.2f} · {status[reading_color(row, part, metric)]}")
-                st.caption(f"Recorded: {row['timestamp']} · Caudal: {row['caudal']} · Movement: {bool(row['movimiento'])}")
-            else:
-                st.write(f'**{part}** · No measurement')
+            rows.append({
+                'Body region': part,
+                label: row[metric] if row else None,
+                **({'Flow rate (PU)': row['caudal'] if row else None} if metric != 'caudal' else {}),
+                'Movement': ('Yes' if row['movimiento'] else 'No') if row else None,
+                'Status': status[reading_color(row, part, metric)] if row else 'No measurement',
+            })
+        with readings_container if readings_container is not None else st.container():
+            formats = {label: '{:.2f}'}
+            if metric != 'caudal':
+                formats['Flow rate (PU)'] = '{:.2f}'
+            st.table(pd.DataFrame(rows).style.hide(axis='index').format(formats, na_rep='—'))
     except ApiError as error:
         show_api_error(error)
-        if st.button('Retry'):
-            st.rerun()
+        st.button('Retry', on_click=reset_map_date)

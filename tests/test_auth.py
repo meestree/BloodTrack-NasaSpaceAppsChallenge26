@@ -120,14 +120,14 @@ def test_users_and_sessions_survive_restart(database_path: Path) -> None:
 def test_initialization_preserves_existing_tables(database_path: Path) -> None:
     path = database_path
     with sqlite3.connect(path) as connection:
-        connection.execute("INSERT INTO partes_corporales (id_parte, nombre) VALUES (1, 'Cuello')")
+        connection.execute("INSERT INTO partes_corporales (id_parte, nombre) VALUES (1, 'Neck')")
         schema_before = connection.execute(
             "SELECT name, sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY name"
         ).fetchall()
     with TestClient(create_app(path)) as client:
         register(client)
     with sqlite3.connect(path) as connection:
-        assert connection.execute("SELECT nombre FROM partes_corporales").fetchone()[0] == "Cuello"
+        assert connection.execute("SELECT nombre FROM partes_corporales").fetchone()[0] == "Neck"
         for name, sql in schema_before:
             assert connection.execute("SELECT sql FROM sqlite_master WHERE name = ?", (name,)).fetchone()[0] == sql
 

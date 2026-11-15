@@ -15,10 +15,10 @@ def test_temperature_boundaries(temperature, color):
 
 def test_map_uses_worst_side_and_requires_all_regions():
     readings = {part: {'temperatura': 36} for part in PARTS}
-    readings['Brazo derecho']['temperatura'] = 40
-    readings['Pierna izquierda']['temperatura'] = 35
+    readings['Right arm']['temperatura'] = 40
+    readings['Left leg']['temperatura'] = 35
     assert map_filename(readings) == 'HG_AR_LY.png'
-    del readings['Cuello']
+    del readings['Neck']
     assert map_filename(readings) is None
 
 
@@ -27,32 +27,32 @@ def test_all_color_combinations_have_images():
         assert (RESOURCES / f'H{head}_A{arms}_L{legs}.png').is_file()
 
 
-@pytest.mark.parametrize('part,value,color', [
-    ('Cuello', 299, 'R'), ('Cuello', 300, 'Y'), ('Cuello', 699, 'Y'),
-    ('Cuello', 700, 'G'), ('Cuello', 849, 'G'), ('Cuello', 850, 'Y'),
-    ('Cuello', 950, 'Y'), ('Cuello', 951, 'R'),
-    ('Brazo izquierdo', 299, 'R'), ('Brazo izquierdo', 300, 'Y'),
-    ('Brazo izquierdo', 749.99, 'Y'), ('Brazo izquierdo', 750, 'G'),
-    ('Brazo izquierdo', 751, 'G'), ('Pierna derecha', 1000, 'G'),
-    ('Pierna derecha', 1000.01, 'Y'), ('Pierna derecha', 1499, 'Y'), ('Pierna derecha', 1500, 'Y'),
-    ('Pierna derecha', 20000, 'Y'), ('Pierna derecha', 20001, 'R'),
+@pytest.mark.parametrize('part,bounds', [
+    ('Neck', (7, 15, 40, 60)),
+    ('Left arm', (5, 10, 30, 50)), ('Right arm', (5, 10, 30, 50)),
+    ('Left leg', (2, 5, 20, 35)), ('Right leg', (2, 5, 20, 35)),
 ])
-def test_microcirculation_thresholds(part, value, color):
+def test_microcirculation_thresholds(part, bounds):
     from frontend.components.body_map import caudal_color
-    assert caudal_color(value, part) == color
+    low, normal_low, normal_high, high = bounds
+    for value, color in [(low - .01, 'R'), (low, 'Y'),
+                         (normal_low - .01, 'Y'), (normal_low, 'G'),
+                         (normal_high, 'G'), (normal_high + .01, 'Y'),
+                         (high, 'Y'), (high + .01, 'R')]:
+        assert caudal_color(value, part) == color
 
 
 def test_microcirculation_page_uses_flow_not_temperature(monkeypatch):
     from streamlit.testing.v1 import AppTest
     from frontend.components import body_map
-    readings = {part: {'nombre': part, 'temperatura': 36, 'caudal': 800,
+    readings = {part: {'nombre': part, 'temperatura': 36, 'caudal': 20,
                         'timestamp': '2020-01-02T12:00:00Z', 'movimiento': 0}
                 for part in PARTS}
-    readings['Cuello']['caudal'] = 960
-    readings['Brazo izquierdo']['caudal'] = 500
+    readings['Neck']['caudal'] = 61
+    readings['Left arm']['caudal'] = 7
     assert map_filename(readings, 'caudal') == 'HR_AY_LG.png'
     assert map_filename(readings) == 'HG_AG_LG.png'
-    monkeypatch.setattr(body_map, 'request', lambda *args, **kwargs:
+    monkeypatch.setattr(body_map.api, 'read', lambda *args, **kwargs:
         {'date': '2020-01-02', 'items': list(readings.values())})
     app = AppTest.from_string('from frontend.views.microcirculation import render_microcirculation\nrender_microcirculation()')
     app.session_state['access_token'] = 'test'
@@ -62,5 +62,7 @@ def test_microcirculation_page_uses_flow_not_temperature(monkeypatch):
     assert 'Microcirculation color legend' in html
     assert 'body-map-image' in html
     assert 'Green — Normal: Within the expected reference range.' in html
-    assert any('960.00' in element.value and 'Alert' in element.value for element in app.markdown)
+    table = app.table[0].value.set_index('Body region')
+    assert table.loc['Neck', 'Microcirculation (PU)'] == 61
+    assert table.loc['Neck', 'Status'] == 'Alert'
     assert app.date_input[0].value.isoformat() == '2020-01-02'

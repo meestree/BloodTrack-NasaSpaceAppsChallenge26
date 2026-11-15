@@ -18,8 +18,8 @@ def connected(client, frontend_requests):
     calls = frontend_requests
     with client.app.state.auth_store.connection() as connection:
         connection.executemany('INSERT INTO partes_corporales VALUES (?, ?)', [
-            (1, 'Cuello'), (2, 'Brazo izquierdo'), (3, 'Brazo derecho'),
-            (4, 'Pierna izquierda'), (5, 'Pierna derecha')])
+            (1, 'Neck'), (2, 'Left arm'), (3, 'Right arm'),
+            (4, 'Left leg'), (5, 'Right leg')])
     return client, calls
 
 
@@ -53,18 +53,35 @@ def seed(token, count=5):
     at = datetime.now(timezone.utc) - timedelta(seconds=5)
     api.request('POST', '/measurements', token, json={'measurements': [
         {'id_parte': n % 5 + 1, 'timestamp': at.isoformat(), 'temperatura': 36,
-         'caudal': 800, 'movimiento': n % 2} for n in range(count)]})
+         'caudal': 20, 'movimiento': n % 2} for n in range(count)]})
 
 
-def test_home_forms_and_api_health(connected):
-    for label, page in [('Log In', 'login'), ('Get started', 'signup')]:
-        screen = app()
-        button(screen, label).click().run()
-        assert screen.query_params['page'] == page
-        assert not screen.exception
+def test_index_login_registration_and_about(connected):
     screen = app()
-    button(screen, 'Check API connection').click().run()
-    assert screen.success[0].value == 'The API is available.'
+    assert [field.label for field in screen.text_input] == ['User', 'Password']
+    assert any('WELCOME TO BLOODTRACK' in item.value for item in screen.markdown)
+    assert not any('Our vision' in item.value for item in screen.get('html'))
+    assert not any(item.label == 'About Us' for item in screen.button)
+    screen = app('about')
+    assert screen.query_params['page'] == 'about'
+    about = '\n'.join(item.value for item in screen.get('html'))
+    assert 'About Us' in about and 'Our vision' in about and 'Features' in about
+    screen.button(key='back_home').click().run()
+    assert screen.query_params['page'] == 'home'
+    button(screen, 'Get started').click().run()
+    assert screen.query_params['page'] == 'signup'
+    screen.button(key='signup_login').click().run()
+    assert not screen.exception
+    assert any('WELCOME TO BLOODTRACK' in item.value for item in screen.markdown)
+
+
+def test_workspace_combines_mission_and_features(signed_in):
+    _, _, token, _ = signed_in
+    screen = app('welcome', token=token)
+    assert any(item.label == 'About Us' for item in screen.button)
+    assert not any(item.label in ('Our Mission', 'Features') for item in screen.button)
+    about = '\n'.join(item.value for item in screen.get('html'))
+    assert 'Our vision' in about and 'Features' in about
 
 
 def test_registration_login_logout(connected):
@@ -73,7 +90,9 @@ def test_registration_login_logout(connected):
     screen.text_input[0].set_value('astronaut')
     screen.text_input[1].set_value('astronaut@example.com')
     screen.text_input[2].set_value(PASSWORD)
-    screen.date_input[0].set_value(date(1995, 5, 21))
+    screen.selectbox(key='birth_year').select(1995)
+    screen.selectbox(key='birth_month').select(5)
+    screen.selectbox(key='birth_day').select(21)
     button(screen, 'Sign Up').click().run()
     assert not screen.exception
     assert screen.query_params['page'] == 'login'
@@ -100,7 +119,9 @@ def test_signup_validation_and_duplicate_errors(connected):
     screen.text_input[0].set_value('astronaut')
     screen.text_input[1].set_value('invalid-email')
     screen.text_input[2].set_value(PASSWORD)
-    screen.date_input[0].set_value(date(1995, 5, 21))
+    screen.selectbox(key='birth_year').select(1995)
+    screen.selectbox(key='birth_month').select(5)
+    screen.selectbox(key='birth_day').select(21)
     button(screen, 'Sign Up').click().run()
     assert not screen.exception
     assert any('valid value' in row.value for row in screen.error)
@@ -179,18 +200,30 @@ def test_login_validation_and_connection_error(connected, monkeypatch):
     screen.text_input[1].set_value(PASSWORD)
     def unavailable(*args, **kwargs):
         raise api.requests.ConnectionError()
-    monkeypatch.setattr(api.requests, 'request', unavailable)
+    monkeypatch.setattr(api, '_send', unavailable)
     button(screen, 'Log In').click().run()
     assert not screen.exception
     assert 'Cannot reach' in screen.error[0].value
     assert 'access_token' not in screen.session_state
 
 
-def test_editorial_navigation_still_works():
+def test_about_navigation_still_works():
     screen = app('welcome')
-    for section, title in [('mission', 'OUR MISSION'), ('features', 'FEATURES')]:
-        if not screen.session_state['drawer_is_open']:
-            screen.button(key='navigation_open').click().run()
-        screen.button(key=f'section_{section}').click().run()
-        assert not screen.exception
-        assert title in ' '.join(row.value for row in screen.markdown)
+    screen.button(key='section_about').click().run()
+    assert not screen.exception
+    assert 'About Us' in ' '.join(row.value for row in screen.get('html'))
+
+
+def test_map_navigation_reuses_readings_and_refreshes_on_demand(signed_in):
+    _, calls, token, _ = signed_in
+    seed(token)
+    calls.clear()
+    screen = app('welcome', 'temperature', token)
+    assert [(method, path) for method, path, _ in calls] == [('GET', '/api/v1/measurements/latest')]
+    calls.clear()
+    screen.button(key='navigation_open').click().run()
+    assert [(method, path) for method, path, _ in calls] == [('GET', '/api/v1/auth/me')]
+    calls.clear()
+    button(screen, 'Latest readings').click().run()
+    assert [(method, path) for method, path, _ in calls] == [('GET', '/api/v1/measurements/latest')]
+    assert not screen.exception
