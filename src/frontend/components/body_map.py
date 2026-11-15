@@ -104,14 +104,11 @@ def render_body_map(metric: str = 'temperatura', readings_container=None) -> Non
             rows.append({
                 'Body region': part,
                 label: row[metric] if row else None,
-                **({'Flow rate (PU)': row['caudal'] if row else None} if metric != 'caudal' else {}),
                 'Movement': ('Yes' if row['movimiento'] else 'No') if row else None,
                 'Status': status[reading_color(row, part, metric)] if row else 'No measurement',
             })
         with readings_container if readings_container is not None else st.container():
             formats = {label: '{:.2f}'}
-            if metric != 'caudal':
-                formats['Flow rate (PU)'] = '{:.2f}'
             st.table(pd.DataFrame(rows).style.hide(axis='index').format(formats, na_rep='—'))
             render_movement_summary(selected, token)
     except ApiError as error:

@@ -15,6 +15,14 @@
 .flow-ranges th, .flow-ranges td { padding: 8px; border: 1px solid #555; text-align: left; }
 .st-key-analysis-actions [data-testid="stButton"] button { min-height: 56px; padding: 12px 20px; width: 100%; }
 .st-key-analysis-actions [data-testid="stButton"] button p { font-size: 20px; }
+.st-key-analysis-actions [data-testid="stButton"] button[kind="primary"] {
+    background: #17648a;
+    border-color: #79cfff;
+    font-weight: 600;
+}
+.st-key-analysis-actions [data-testid="stButton"] button[kind="primary"]:hover {
+    background: #207ba5;
+}
 /* A translucent panel keeps page content readable over the shared image. */
 .st-key-landing,
 .st-key-about_page,
