@@ -1,5 +1,7 @@
 # BloodTrack · NASA Space Apps
 
+This is our project for the hackaton "NASA Space Apps". We had 48 hours to solve the challenge "Health monitoring system for astronauts". So we decided to develop BloodTrack.
+
 BloodTrack is a body-region sensor dashboard by **Space Dracula** for exploring measurements in the context of microgravity research. It combines a Streamlit interface, a FastAPI backend, and a supplied SQLite sample database.
 
 Users can register, sign in, record measurements, inspect their history, and explore temperature, microcirculation, movement-marked samples, and statistical summaries. The frontend communicates with the API; it never reads SQLite directly.
