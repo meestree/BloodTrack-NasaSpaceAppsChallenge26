@@ -1,6 +1,8 @@
 <div align="center">
-![Logo del proyecto](src/frontend/assets/logo.png)
+  <img src="src/frontend/assets/logo.png" width="200" alt="Texto alternativo">
 </div>
+<p></p>
+
 # BloodTrack · NASA Space Apps
 
 This is our project for the hackaton "NASA Space Apps". We had 48 hours to solve the challenge "Health monitoring system for astronauts". So we decided to develop BloodTrack.
